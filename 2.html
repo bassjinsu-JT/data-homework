@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>바이너리 퍼즐</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFEAE0;
+    --panel:#F8F5EE;
+    --ink:#242321;
+    --line:#CFC7B0;
+    --accent:#C1443C;
+    --good:#3E7C59;
+    --bad:#C1443C;
+    --clue-bg:#E4DFD0;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:22px 22px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:28px 20px 60px; }
+  header h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(26px, 4vw, 36px);
+    letter-spacing:-0.01em;
+    margin:0 0 6px;
+  }
+  header h1 .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.4em;
+    font-weight:500;
+    background:var(--ink);
+    color:var(--bg);
+    padding:3px 8px;
+    border-radius:4px;
+    vertical-align:middle;
+    margin-left:10px;
+  }
+  header p{ margin:0 0 18px; color:#5a5648; font-size:15px; line-height:1.6; max-width:660px; }
+
+  .panel{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+  .panel h2{ font-size:14px; font-weight:600; margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+
+  .rules{ margin:0; padding-left:20px; font-size:14px; line-height:1.9; color:#3a382f; }
+
+  .demo-row{ display:flex; align-items:center; gap:18px; flex-wrap:wrap; margin-top:4px; }
+  .demo-grid{ width:150px; }
+  .demo-grid .grid{ display:grid; grid-template-columns:repeat(4,1fr); border:2px solid var(--ink); background:#fff; }
+  .demo-grid .cell{ aspect-ratio:1/1; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:16px; }
+  .demo-grid .cell.filled-in{ color:var(--accent); }
+  .demo-arrow{ font-size:22px; }
+
+  .puzzle{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px 18px;
+    margin-bottom:20px;
+  }
+  .puzzle-title{ font-size:15px; font-weight:600; margin-bottom:12px; }
+  .puzzle-body{ display:flex; gap:20px; flex-wrap:wrap; align-items:flex-start; }
+  .gridbox{ max-width:340px; width:100%; }
+  .gridbox .grid{ display:grid; border:2px solid var(--ink); background:#fff; }
+  .gridbox .cell{
+    aspect-ratio:1/1;
+    border:1px solid var(--line);
+    background:#fff;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:clamp(13px, 2.6vw, 18px);
+    color:var(--ink);
+    cursor:pointer;
+    padding:0;
+  }
+  .gridbox .cell.clue{ background:var(--clue-bg); cursor:default; font-weight:700; }
+  .gridbox .cell.status-correct{ outline:2px solid var(--good); outline-offset:-2px; }
+  .gridbox .cell.status-wrong{ outline:2px solid var(--bad); outline-offset:-2px; color:var(--bad); }
+  .gridbox .cell:focus-visible{ outline:3px solid #3B5BA5; outline-offset:2px; }
+
+  .side-controls{ display:flex; flex-direction:column; gap:10px; min-width:160px; }
+  .btn{
+    padding:10px 14px; font-family:inherit; font-weight:600; font-size:14px;
+    border:2px solid var(--ink); border-radius:5px; background:#fff; color:var(--ink); cursor:pointer;
+  }
+  .btn:hover{ background:var(--ink); color:var(--bg); }
+  .btn.primary{ background:var(--ink); color:var(--bg); }
+  .btn.primary:hover{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn:focus-visible{ outline:3px solid #3B5BA5; outline-offset:2px; }
+  .feedback{ font-size:13px; font-weight:600; min-height:36px; }
+  .feedback.good{ color:var(--good); }
+  .feedback.bad{ color:var(--bad); }
+  .hint-note{ font-size:12px; color:#8b8570; line-height:1.6; }
+
+  @media (prefers-reduced-motion:no-preference){
+    .cell.flash{ animation:flashcell .3s ease; }
+    @keyframes flashcell{ 0%{ transform:scale(1);} 40%{ transform:scale(0.85);} 100%{ transform:scale(1);} }
+    .celebrate{ animation:celebrate .8s ease; }
+    @keyframes celebrate{ 0%,100%{ box-shadow:0 0 0 0 transparent;} 50%{ box-shadow:0 0 0 6px #E3A72F;} }
+  }
+  footer{ text-align:center; font-size:12px; color:#8b8570; margin-top:26px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>바이너리 퍼즐<span class="tag">0 · 1</span></h1>
+    <p>스도쿠와 비슷한 논리 퍼즐이에요. 빈 칸을 눌러 0과 1을 채워 보세요. 회색 칸은 처음부터 주어진 숫자라 바꿀 수 없어요.</p>
+  </header>
+
+  <div class="panel">
+    <h2>규칙</h2>
+    <ol class="rules">
+      <li>모든 칸은 0 또는 1로 채워져야 합니다.</li>
+      <li>가로 또는 세로로 같은 숫자가 3개 이상 연속될 수 없습니다.</li>
+      <li>가로 또는 세로로 한 줄에 있는 0과 1의 개수는 서로 같아야 합니다.</li>
+      <li>해답은 오직 한 가지뿐입니다.</li>
+    </ol>
+    <div class="demo-row">
+      <div class="demo-grid"><div class="grid" id="demoBefore"></div></div>
+      <span class="demo-arrow">➜</span>
+      <div class="demo-grid"><div class="grid" id="demoAfter"></div></div>
+    </div>
+  </div>
+
+  <div id="puzzles"></div>
+
+  <footer>칸을 누르면 빈칸 → 1 → 0 → 빈칸 순서로 바뀝니다. 다 채웠으면 '정답 확인'을 눌러보세요.</footer>
+</div>
+
+<script>
+// -- 상단 예시 (4x4, 참고용, 클릭 불가) --
+const demoBefore = [
+  [null,0,0,null],
+  [null,0,null,null],
+  [1,null,null,0],
+  [null,null,1,null]
+];
+const demoAfter = [
+  [1,0,0,1],
+  [0,0,1,1],
+  [1,1,0,0],
+  [0,1,1,0]
+];
+function buildDemo(id, data, markFilled){
+  const el = document.getElementById(id);
+  for(let r=0;r<4;r++){
+    for(let c=0;c<4;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      const v = data[r][c];
+      cell.textContent = v === null ? '' : v;
+      if(markFilled && demoBefore[r][c] === null && v !== null){
+        cell.classList.add('filled-in');
+      }
+      el.appendChild(cell);
+    }
+  }
+}
+buildDemo('demoBefore', demoBefore, false);
+buildDemo('demoAfter', demoAfter, true);
+
+// -- 실제 퍼즐 데이터 --
+// clue: 처음 주어진 숫자 (null이면 빈칸)
+// solution: 정답
+const puzzles = [
+  {
+    name: '퍼즐 1 (6×6)',
+    size: 6,
+    clue: [
+      [0,null,null,1,null,null],
+      [0,1,null,null,null,1],
+      [null,null,null,0,0,null],
+      [1,null,null,0,null,null],
+      [null,0,null,null,null,null],
+      [1,0,null,0,null,0]
+    ],
+    solution: [
+      [0,1,0,1,1,0],
+      [0,1,0,1,0,1],
+      [1,0,1,0,0,1],
+      [1,1,0,0,1,0],
+      [0,0,1,1,0,1],
+      [1,0,1,0,1,0]
+    ]
+  },
+  {
+    name: '퍼즐 2 (6×6)',
+    size: 6,
+    clue: [
+      [null,null,null,1,null,null],
+      [null,null,null,null,null,1],
+      [null,1,0,null,null,null],
+      [null,1,null,1,1,null],
+      [null,null,null,0,null,0],
+      [0,null,null,null,null,null]
+    ],
+    solution: [
+      [1,0,0,1,1,0],
+      [1,0,1,0,0,1],
+      [0,1,0,1,0,1],
+      [0,1,0,1,1,0],
+      [1,0,1,0,1,0],
+      [0,1,1,0,0,1]
+    ]
+  },
+  {
+    name: '퍼즐 3 (8×8)',
+    size: 8,
+    clue: [
+      [null,0,0,null,0,null,null,1],
+      [0,null,null,null,null,1,null,1],
+      [0,null,0,null,null,1,null,null],
+      [null,1,null,null,null,null,0,null],
+      [1,null,null,1,null,null,0,0],
+      [null,null,null,null,null,null,null,null],
+      [null,0,null,1,1,null,null,null],
+      [null,1,1,null,1,null,1,0]
+    ],
+    solution: [
+      [1,0,0,1,0,0,1,1],
+      [0,0,1,0,1,1,0,1],
+      [0,1,0,1,0,1,1,0],
+      [1,1,0,0,1,0,0,1],
+      [1,0,1,1,0,1,0,0],
+      [0,1,1,0,0,1,1,0],
+      [1,0,0,1,1,0,0,1],
+      [0,1,1,0,1,0,1,0]
+    ]
+  }
+];
+
+function buildPuzzles(){
+  const container = document.getElementById('puzzles');
+  puzzles.forEach((p) => {
+    const n = p.size;
+    const userGrid = p.clue.map(row => row.map(v => v));
+    const status = Array.from({length:n}, () => Array.from({length:n}, () => ''));
+
+    const box = document.createElement('div');
+    box.className = 'puzzle';
+
+    const title = document.createElement('div');
+    title.className = 'puzzle-title';
+    title.textContent = p.name;
+    box.appendChild(title);
+
+    const body = document.createElement('div');
+    body.className = 'puzzle-body';
+
+    const gridbox = document.createElement('div');
+    gridbox.className = 'gridbox';
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    grid.style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+    gridbox.appendChild(grid);
+
+    function render(){
+      grid.innerHTML = '';
+      for(let r=0;r<n;r++){
+        for(let c=0;c<n;c++){
+          const isClue = p.clue[r][c] !== null;
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          const v = userGrid[r][c];
+          cell.className = 'cell' + (isClue ? ' clue' : '') + (status[r][c] ? (' status-'+status[r][c]) : '');
+          cell.textContent = v === null ? '' : v;
+          cell.disabled = isClue;
+          cell.setAttribute('aria-label', `${r+1}행 ${c+1}열`);
+          if(!isClue){
+            cell.addEventListener('click', () => {
+              if(userGrid[r][c] === null) userGrid[r][c] = 1;
+              else if(userGrid[r][c] === 1) userGrid[r][c] = 0;
+              else userGrid[r][c] = null;
+              status[r][c] = '';
+              render();
+              const idx = r*n+c;
+              const cells = grid.children;
+              if(cells[idx]){
+                cells[idx].classList.add('flash');
+                setTimeout(() => cells[idx] && cells[idx].classList.remove('flash'), 300);
+              }
+            });
+          }
+          grid.appendChild(cell);
+        }
+      }
+    }
+    render();
+
+    const side = document.createElement('div');
+    side.className = 'side-controls';
+
+    const checkBtn = document.createElement('button');
+    checkBtn.className = 'btn primary';
+    checkBtn.textContent = '정답 확인';
+
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'btn';
+    resetBtn.textContent = '초기화';
+
+    const feedback = document.createElement('div');
+    feedback.className = 'feedback';
+
+    const note = document.createElement('div');
+    note.className = 'hint-note';
+    note.textContent = '빈칸을 누르면 1 → 0 → 빈칸 순서로 바뀌어요.';
+
+    checkBtn.addEventListener('click', () => {
+      let correct = 0, filled = 0, total = 0;
+      for(let r=0;r<n;r++){
+        for(let c=0;c<n;c++){
+          if(p.clue[r][c] !== null) continue;
+          total++;
+          const v = userGrid[r][c];
+          if(v === null){ status[r][c] = ''; continue; }
+          filled++;
+          if(v === p.solution[r][c]){ status[r][c] = 'correct'; correct++; }
+          else { status[r][c] = 'wrong'; }
+        }
+      }
+      render();
+      if(correct === total){
+        feedback.textContent = '정답입니다! 퍼즐을 완성했어요 🎉';
+        feedback.className = 'feedback good';
+        gridbox.classList.add('celebrate');
+        setTimeout(() => gridbox.classList.remove('celebrate'), 800);
+      } else {
+        feedback.textContent = `${total}칸 중 ${correct}칸 맞았어요 (${filled}칸 입력함). 빨간 칸을 다시 확인해보세요.`;
+        feedback.className = 'feedback bad';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      for(let r=0;r<n;r++) for(let c=0;c<n;c++){
+        if(p.clue[r][c] === null){ userGrid[r][c] = null; status[r][c] = ''; }
+      }
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+      render();
+    });
+
+    side.appendChild(checkBtn);
+    side.appendChild(resetBtn);
+    side.appendChild(feedback);
+    side.appendChild(note);
+
+    body.appendChild(gridbox);
+    body.appendChild(side);
+    box.appendChild(body);
+    container.appendChild(box);
+  });
+}
+
+buildPuzzles();
+</script>
+</body>
+</html>

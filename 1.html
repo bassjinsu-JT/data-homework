@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>이진수 모양 더하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFEAE0;
+    --panel:#F8F5EE;
+    --ink:#242321;
+    --line:#CFC7B0;
+    --accent:#C1443C;
+    --good:#3E7C59;
+    --bad:#C1443C;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:22px 22px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{ max-width:920px; margin:0 auto; padding:28px 20px 60px; }
+  header h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(26px, 4vw, 36px);
+    letter-spacing:-0.01em;
+    margin:0 0 6px;
+  }
+  header h1 .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.4em;
+    font-weight:500;
+    background:var(--ink);
+    color:var(--bg);
+    padding:3px 8px;
+    border-radius:4px;
+    vertical-align:middle;
+    margin-left:10px;
+  }
+  header p{ margin:0 0 18px; color:#5a5648; font-size:15px; line-height:1.6; max-width:640px; }
+
+  .panel{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+  .panel h2{ font-size:14px; font-weight:600; margin:0 0 12px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+
+  .legend-row{ display:flex; align-items:center; gap:22px; flex-wrap:wrap; }
+  .legend-grid{ width:96px; }
+  .legend-grid .grid{ display:grid; grid-template-columns:repeat(3,1fr); border:2px solid var(--ink); background:#fff; }
+  .legend-grid .cell{ aspect-ratio:1/1; border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-size:11px; color:#5a5648; }
+  .legend-text{ font-size:13.5px; color:#5a5648; line-height:1.7; max-width:440px; }
+
+  .hint-toggle{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:600; cursor:pointer;
+    border:2px solid var(--ink); border-radius:5px; padding:8px 12px; background:#fff;
+  }
+  .hint-toggle input{ accent-color:var(--ink); width:16px; height:16px; }
+
+  .example-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:12px; }
+  .example-row .mini{ width:64px; }
+  .example-row .mini .grid{ display:grid; grid-template-columns:repeat(3,1fr); border:2px solid var(--ink); background:#fff; }
+  .example-row .mini .cell{ aspect-ratio:1/1; border:1px solid var(--line); }
+  .example-row .mini .cell.on{ background:var(--ink); }
+  .example-row .op{ font-size:18px; font-weight:700; }
+  .example-row .val{ font-family:'IBM Plex Mono', monospace; font-size:13px; color:#5a5648; }
+
+  .problem{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px 18px;
+    margin-bottom:18px;
+  }
+  .problem-title{ font-size:13px; font-weight:600; color:#5a5648; margin-bottom:10px; }
+  .problem-row{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+  .gridwrap{ width:118px; flex-shrink:0; }
+  .gridwrap .grid{ display:grid; grid-template-columns:repeat(3,1fr); border:2px solid var(--ink); background:#fff; }
+  .gridwrap .cell{
+    position:relative; aspect-ratio:1/1; border:1px solid var(--line); background:#fff; padding:0;
+  }
+  .gridwrap .cell.on{ background:var(--ink); }
+  .gridwrap.editable .cell{ cursor:pointer; }
+  .gridwrap .cell .numlabel{
+    position:absolute; bottom:1px; right:2px; font-family:'IBM Plex Mono', monospace;
+    font-size:9px; color:#9a927a;
+  }
+  .gridwrap .cell.on .numlabel{ color:#cfc7b0; }
+  .gridwrap .cell.status-correct{ outline:2px solid var(--good); outline-offset:-2px; }
+  .gridwrap .cell.status-wrong{ outline:2px solid var(--bad); outline-offset:-2px; }
+
+  .op-sym{ font-size:22px; font-weight:700; width:26px; text-align:center; flex-shrink:0; }
+  .result-block{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .btn{
+    padding:9px 14px; font-family:inherit; font-weight:600; font-size:13px;
+    border:2px solid var(--ink); border-radius:5px; background:#fff; color:var(--ink); cursor:pointer;
+  }
+  .btn:hover{ background:var(--ink); color:var(--bg); }
+  .btn.primary{ background:var(--ink); color:var(--bg); }
+  .btn.primary:hover{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn:focus-visible, .gridwrap .cell:focus-visible{ outline:3px solid #3B5BA5; outline-offset:2px; }
+  .feedback{ font-size:13px; font-weight:600; min-height:18px; text-align:center; }
+  .feedback.good{ color:var(--good); }
+  .feedback.bad{ color:var(--bad); }
+
+  @media (prefers-reduced-motion:no-preference){
+    .gridwrap .cell.flash{ animation:flashcell .4s ease; }
+    @keyframes flashcell{ 0%{ transform:scale(1); } 40%{ transform:scale(0.8); } 100%{ transform:scale(1); } }
+    .celebrate{ animation:celebrate .8s ease; }
+    @keyframes celebrate{ 0%,100%{ box-shadow:0 0 0 0 transparent; } 50%{ box-shadow:0 0 0 6px #E3A72F; } }
+  }
+  @media (max-width:560px){
+    .problem-row{ justify-content:center; }
+  }
+  footer{ text-align:center; font-size:12px; color:#8b8570; margin-top:26px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>이진수 모양 더하기<span class="tag">1+2+4+…</span></h1>
+    <p>두 개의 바코드가 나타내는 수를 더한 다음, 그 합에 해당하는 바코드를 오른쪽 빈 칸에 색칠해 보세요.</p>
+  </header>
+
+  <div class="panel">
+    <h2>칸의 값 (참고표)</h2>
+    <div class="legend-row">
+      <div class="legend-grid"><div class="grid" id="legendGrid"></div></div>
+      <div class="legend-text">검은색으로 칠해진 칸의 숫자를 모두 더하면 바코드가 나타내는 수가 됩니다. 두 바코드를 더할 때는 각 바코드가 나타내는 수를 먼저 더하고, 그 합을 다시 바코드 모양으로 바꿔서 색칠합니다.</div>
+    </div>
+    <div class="example-row" id="exampleRow"></div>
+    <label class="hint-toggle" style="margin-top:14px;">
+      <input type="checkbox" id="hintToggle"> 칸마다 숫자 힌트 보기
+    </label>
+  </div>
+
+  <div id="problems"></div>
+
+  <footer>모든 문제를 색칠했으면 각 문제의 '정답 확인' 버튼을 눌러보세요.</footer>
+</div>
+
+<script>
+const VALUES = [[1,2,4],[8,16,32],[64,128,256]];
+
+const problems = [
+  { a:[[1,1,0],[1,0,0],[0,0,0]], b:[[0,0,1],[0,1,1],[0,0,0]], target:[[1,1,1],[1,1,1],[0,0,0]] },
+  { a:[[0,0,1],[0,1,0],[0,0,0]], b:[[0,0,1],[0,1,0],[0,0,0]], target:[[0,0,0],[1,0,1],[0,0,0]] },
+  { a:[[1,1,1],[0,1,0],[0,0,0]], b:[[1,1,1],[0,0,1],[0,0,0]], target:[[0,1,1],[1,1,1],[0,0,0]] },
+  { a:[[0,0,0],[1,1,1],[0,0,0]], b:[[0,0,0],[1,1,0],[1,0,0]], target:[[0,0,0],[0,1,0],[0,1,0]] }
+];
+
+let showHints = false;
+
+function sumOf(arr){
+  let s = 0;
+  for(let r=0;r<3;r++) for(let c=0;c<3;c++) if(arr[r][c]) s += VALUES[r][c];
+  return s;
+}
+
+function buildStaticGrid(container, dataArr){
+  container.innerHTML = '';
+  for(let r=0;r<3;r++){
+    for(let c=0;c<3;c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (dataArr[r][c] ? ' on' : '');
+      if(showHints){
+        const lab = document.createElement('span');
+        lab.className = 'numlabel';
+        lab.textContent = VALUES[r][c];
+        cell.appendChild(lab);
+      }
+      container.appendChild(cell);
+    }
+  }
+}
+
+function buildLegend(){
+  const container = document.getElementById('legendGrid');
+  container.innerHTML = '';
+  for(let r=0;r<3;r++) for(let c=0;c<3;c++){
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    cell.textContent = VALUES[r][c];
+    container.appendChild(cell);
+  }
+}
+
+function buildExample(){
+  const row = document.getElementById('exampleRow');
+  row.innerHTML = '';
+  const exs = [
+    { a:[[1,0,0],[0,0,0],[0,0,0]], b:[[0,1,0],[0,0,0],[0,0,0]], r:[[1,1,0],[0,0,0],[0,0,0]], label:'1 + 2 = 3' },
+    { a:[[0,0,1],[0,0,0],[0,0,0]], b:[[0,0,1],[0,0,0],[0,0,0]], r:[[0,0,0],[1,0,0],[0,0,0]], label:'4 + 4 = 8' }
+  ];
+  exs.forEach(ex => {
+    const wrapMini = (data) => {
+      const m = document.createElement('div');
+      m.className = 'mini';
+      const g = document.createElement('div');
+      g.className = 'grid';
+      for(let r=0;r<3;r++) for(let c=0;c<3;c++){
+        const cell = document.createElement('div');
+        cell.className = 'cell' + (data[r][c] ? ' on' : '');
+        g.appendChild(cell);
+      }
+      m.appendChild(g);
+      return m;
+    };
+    row.appendChild(wrapMini(ex.a));
+    const plus = document.createElement('span'); plus.className='op'; plus.textContent='+';
+    row.appendChild(plus);
+    row.appendChild(wrapMini(ex.b));
+    const eq = document.createElement('span'); eq.className='op'; eq.textContent='=';
+    row.appendChild(eq);
+    row.appendChild(wrapMini(ex.r));
+    const val = document.createElement('span'); val.className='val'; val.textContent = ex.label;
+    row.appendChild(val);
+  });
+}
+
+function buildProblems(){
+  const container = document.getElementById('problems');
+  container.innerHTML = '';
+  problems.forEach((p, idx) => {
+    const userGrid = [[0,0,0],[0,0,0],[0,0,0]];
+    const status = [[ '','',''],['','',''],['','','']];
+
+    const box = document.createElement('div');
+    box.className = 'problem';
+
+    const title = document.createElement('div');
+    title.className = 'problem-title';
+    title.textContent = `문제 ${idx+1}`;
+    box.appendChild(title);
+
+    const row = document.createElement('div');
+    row.className = 'problem-row';
+
+    const gwA = document.createElement('div'); gwA.className = 'gridwrap';
+    const gridA = document.createElement('div'); gridA.className = 'grid';
+    gwA.appendChild(gridA);
+    buildStaticGrid(gridA, p.a);
+
+    const plus = document.createElement('div'); plus.className = 'op-sym'; plus.textContent = '+';
+
+    const gwB = document.createElement('div'); gwB.className = 'gridwrap';
+    const gridB = document.createElement('div'); gridB.className = 'grid';
+    gwB.appendChild(gridB);
+    buildStaticGrid(gridB, p.b);
+
+    const eq = document.createElement('div'); eq.className = 'op-sym'; eq.textContent = '=';
+
+    const resultBlock = document.createElement('div'); resultBlock.className = 'result-block';
+    const gwC = document.createElement('div'); gwC.className = 'gridwrap editable';
+    const gridC = document.createElement('div'); gridC.className = 'grid';
+    gwC.appendChild(gridC);
+
+    function renderC(){
+      gridC.innerHTML = '';
+      for(let r=0;r<3;r++){
+        for(let c=0;c<3;c++){
+          const cell = document.createElement('button');
+          cell.type = 'button';
+          cell.className = 'cell' + (userGrid[r][c] ? ' on' : '') + (status[r][c] ? (' status-'+status[r][c]) : '');
+          cell.setAttribute('aria-label', `${r+1}행 ${c+1}열, 값 ${VALUES[r][c]}`);
+          if(showHints){
+            const lab = document.createElement('span');
+            lab.className = 'numlabel';
+            lab.textContent = VALUES[r][c];
+            cell.appendChild(lab);
+          }
+          cell.addEventListener('click', () => {
+            userGrid[r][c] = userGrid[r][c] ? 0 : 1;
+            status[r][c] = '';
+            renderC();
+            const cells = gridC.children;
+            cells[r*3+c].classList.add('flash');
+            setTimeout(() => cells[r*3+c] && cells[r*3+c].classList.remove('flash'), 400);
+          });
+          gridC.appendChild(cell);
+        }
+      }
+    }
+    renderC();
+
+    const btnRow = document.createElement('div');
+    btnRow.style.display = 'flex';
+    btnRow.style.gap = '8px';
+    const checkBtn = document.createElement('button');
+    checkBtn.className = 'btn primary';
+    checkBtn.textContent = '정답 확인';
+    const resetBtn = document.createElement('button');
+    resetBtn.className = 'btn';
+    resetBtn.textContent = '초기화';
+    btnRow.appendChild(checkBtn);
+    btnRow.appendChild(resetBtn);
+
+    const feedback = document.createElement('div');
+    feedback.className = 'feedback';
+
+    checkBtn.addEventListener('click', () => {
+      let correct = 0;
+      for(let r=0;r<3;r++) for(let c=0;c<3;c++){
+        if(userGrid[r][c] === p.target[r][c]){
+          status[r][c] = p.target[r][c] ? 'correct' : '';
+          if(userGrid[r][c] === p.target[r][c]) correct++;
+        } else {
+          status[r][c] = 'wrong';
+        }
+      }
+      renderC();
+      if(correct === 9){
+        feedback.textContent = `정답입니다! 이 바코드가 나타내는 수는 ${sumOf(p.target)}입니다 🎉`;
+        feedback.className = 'feedback good';
+        gwC.classList.add('celebrate');
+        setTimeout(() => gwC.classList.remove('celebrate'), 800);
+      } else {
+        feedback.textContent = `9칸 중 ${correct}칸 맞았어요. 빨간 테두리 칸을 다시 확인해보세요.`;
+        feedback.className = 'feedback bad';
+      }
+    });
+
+    resetBtn.addEventListener('click', () => {
+      for(let r=0;r<3;r++) for(let c=0;c<3;c++){ userGrid[r][c]=0; status[r][c]=''; }
+      feedback.textContent = '';
+      feedback.className = 'feedback';
+      renderC();
+    });
+
+    resultBlock.appendChild(gwC);
+    resultBlock.appendChild(btnRow);
+    resultBlock.appendChild(feedback);
+
+    row.appendChild(gwA);
+    row.appendChild(plus);
+    row.appendChild(gwB);
+    row.appendChild(eq);
+    row.appendChild(resultBlock);
+
+    box.appendChild(row);
+    container.appendChild(box);
+
+    box._rerenderStatics = () => {
+      buildStaticGrid(gridA, p.a);
+      buildStaticGrid(gridB, p.b);
+      renderC();
+    };
+  });
+}
+
+document.getElementById('hintToggle').addEventListener('change', (e) => {
+  showHints = e.target.checked;
+  buildProblems();
+});
+
+buildLegend();
+buildExample();
+buildProblems();
+</script>
+</body>
+</html>

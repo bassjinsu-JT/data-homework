@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>픽셀 그림 그리기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFEAE0;
+    --panel:#F8F5EE;
+    --ink:#242321;
+    --line:#CFC7B0;
+    --accent:#C1443C;
+    --good:#3E7C59;
+    --bad:#C1443C;
+    --c1:#C1443C;
+    --c2:#E3A72F;
+    --c3:#3E7C59;
+    --c4:#3B5BA5;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:22px 22px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:1040px;
+    margin:0 auto;
+    padding:28px 20px 60px;
+  }
+  header{
+    margin-bottom:22px;
+  }
+  header h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(28px, 4vw, 40px);
+    letter-spacing:-0.01em;
+    margin:0 0 6px;
+  }
+  header h1 .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.42em;
+    font-weight:500;
+    background:var(--ink);
+    color:var(--bg);
+    padding:3px 8px;
+    border-radius:4px;
+    vertical-align:middle;
+    margin-left:10px;
+    letter-spacing:0;
+  }
+  header p{
+    margin:0;
+    color:#5a5648;
+    font-size:15px;
+    line-height:1.6;
+    max-width:640px;
+  }
+  main{
+    display:grid;
+    grid-template-columns:280px 1fr;
+    gap:22px;
+    align-items:start;
+  }
+  @media (max-width:760px){
+    main{ grid-template-columns:1fr; }
+  }
+  .panel{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px;
+  }
+  .panel + .panel{ margin-top:16px; }
+  .panel h2{
+    font-size:14px;
+    font-weight:600;
+    margin:0 0 10px;
+    padding-bottom:8px;
+    border-bottom:1px solid var(--line);
+  }
+  .seg{
+    display:flex;
+    border:2px solid var(--ink);
+    border-radius:5px;
+    overflow:hidden;
+    margin-bottom:14px;
+  }
+  .seg button{
+    flex:1;
+    padding:9px 6px;
+    font-family:inherit;
+    font-size:13px;
+    font-weight:600;
+    background:var(--panel);
+    color:var(--ink);
+    border:none;
+    cursor:pointer;
+  }
+  .seg button + button{ border-left:2px solid var(--ink); }
+  .seg button.active{ background:var(--ink); color:var(--bg); }
+  select.puzzle-select{
+    width:100%;
+    font-family:inherit;
+    font-size:14px;
+    padding:9px 10px;
+    border:2px solid var(--ink);
+    border-radius:5px;
+    background:#fff;
+    color:var(--ink);
+    margin-bottom:10px;
+  }
+  .size-row{ display:flex; gap:6px; margin-bottom:4px; }
+  .size-row button{
+    flex:1;
+    padding:8px 4px;
+    border:2px solid var(--ink);
+    border-radius:5px;
+    background:#fff;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    cursor:pointer;
+  }
+  .size-row button.active{ background:var(--ink); color:var(--bg); }
+  .btn{
+    display:block;
+    width:100%;
+    padding:11px 10px;
+    font-family:inherit;
+    font-weight:600;
+    font-size:14px;
+    border:2px solid var(--ink);
+    border-radius:5px;
+    background:#fff;
+    color:var(--ink);
+    cursor:pointer;
+    margin-top:8px;
+    transition:background .12s, color .12s;
+  }
+  .btn:hover{ background:var(--ink); color:var(--bg); }
+  .btn.primary{ background:var(--ink); color:var(--bg); }
+  .btn.primary:hover{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn:focus-visible, button:focus-visible, select:focus-visible{
+    outline:3px solid var(--c4);
+    outline-offset:2px;
+  }
+  .palette{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+  .swatch{
+    width:44px;
+    height:44px;
+    border:2px solid var(--ink);
+    border-radius:6px;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:14px;
+    position:relative;
+  }
+  .swatch.selected{ box-shadow:0 0 0 3px var(--c4); }
+  .swatch[data-v="0"]{ background:#fff; color:#999; }
+  .swatch[data-v="1"]{ background:var(--c1); color:#fff; }
+  .swatch[data-v="2"]{ background:var(--c2); color:#3a2c05; }
+  .swatch[data-v="3"]{ background:var(--c3); color:#fff; }
+  .swatch[data-v="4"]{ background:var(--c4); color:#fff; }
+  .binlegend{ font-size:13px; color:#5a5648; line-height:1.7; }
+  .binlegend span{ display:inline-block; width:14px; height:14px; border:1px solid var(--ink); border-radius:2px; vertical-align:-2px; margin-right:5px; }
+  .binlegend .on{ background:var(--ink); }
+  .binlegend .off{ background:#fff; }
+
+  .canvas-area{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:20px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    min-height:360px;
+  }
+  .grid-title{
+    font-weight:600;
+    font-size:15px;
+    margin-bottom:14px;
+    text-align:center;
+  }
+  .gridbox{
+    width:100%;
+    max-width:460px;
+    aspect-ratio:1/1;
+  }
+  .gridbox .grid{
+    width:100%;
+    height:100%;
+    display:grid;
+    border:2px solid var(--ink);
+    background:#fff;
+  }
+  .cell{
+    border:1px solid var(--line);
+    background:#fff;
+    cursor:pointer;
+    padding:0;
+    aspect-ratio:1/1;
+    position:relative;
+  }
+  .cell.on{ background:var(--ink); }
+  .cell.v1{ background:var(--c1); }
+  .cell.v2{ background:var(--c2); }
+  .cell.v3{ background:var(--c3); }
+  .cell.v4{ background:var(--c4); }
+  .cell.status-correct{ outline:2px solid var(--good); outline-offset:-2px; }
+  .cell.status-wrong{ outline:2px solid var(--bad); outline-offset:-2px; }
+  .cell .numlabel{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-family:'IBM Plex Mono', monospace;
+    font-weight:600;
+    font-size:clamp(9px, 2.4vw, 13px);
+    color:#9a927a;
+    pointer-events:none;
+  }
+  .cell.on .numlabel, .cell.v1 .numlabel, .cell.v3 .numlabel, .cell.v4 .numlabel{ color:rgba(255,255,255,0.75); }
+  .cell.v2 .numlabel{ color:#5c4812; }
+  @media (prefers-reduced-motion:no-preference){
+    .cell.flash{ animation:flashcell .5s ease; }
+    @keyframes flashcell{ 0%{ transform:scale(1); } 40%{ transform:scale(0.82); } 100%{ transform:scale(1); } }
+    .celebrate{ animation:celebrate .9s ease; }
+    @keyframes celebrate{ 0%,100%{ box-shadow:0 0 0 0 transparent; } 50%{ box-shadow:0 0 0 6px #E3A72F; } }
+  }
+  .score{
+    margin-top:16px;
+    font-size:14px;
+    font-weight:600;
+    min-height:22px;
+    text-align:center;
+  }
+  .score.good{ color:var(--good); }
+  .score.bad{ color:var(--bad); }
+  .preview-toggle{
+    font-size:12px;
+    background:none;
+    border:none;
+    color:#5a5648;
+    text-decoration:underline;
+    cursor:pointer;
+    margin-top:10px;
+    font-family:inherit;
+  }
+  .preview{
+    margin-top:10px;
+    display:none;
+  }
+  .preview.show{ display:block; }
+  .preview .grid{
+    width:140px;
+    height:140px;
+    display:grid;
+    border:1px solid var(--ink);
+  }
+  .preview .cell{ cursor:default; pointer-events:none; }
+  footer{
+    text-align:center;
+    font-size:12px;
+    color:#8b8570;
+    margin-top:30px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>픽셀 그림 그리기<span class="tag">0 / 1</span></h1>
+    <p>숫자로 적힌 문제를 보고 칸을 눌러 색을 채워 보세요. 컴퓨터가 그림을 저장하는 방식을 손으로 직접 따라 해 보는 연습 도구입니다.</p>
+  </header>
+
+  <main>
+    <div class="controls">
+      <div class="panel">
+        <h2>그림 종류</h2>
+        <div class="seg" id="categorySeg">
+          <button data-cat="binary" class="active">이진수 (0·1)</button>
+          <button data-cat="color">컬러코드 (0~4)</button>
+        </div>
+        <div class="seg" id="modeSeg">
+          <button data-mode="solve" class="active">문제 풀기</button>
+          <button data-mode="free">자유롭게 그리기</button>
+        </div>
+      </div>
+
+      <div class="panel" id="puzzlePanel">
+        <h2 id="puzzlePanelTitle">문제 고르기</h2>
+        <select class="puzzle-select" id="puzzleSelect"></select>
+        <button class="preview-toggle" id="previewToggle">정답 그림 살짝 보기 👀</button>
+        <div class="preview" id="preview"><div class="grid" id="previewGrid"></div></div>
+      </div>
+
+      <div class="panel" id="sizePanel" style="display:none;">
+        <h2>칸 수 정하기</h2>
+        <div class="size-row">
+          <button data-size="6">6×6</button>
+          <button data-size="8" class="active">8×8</button>
+          <button data-size="10">10×10</button>
+          <button data-size="12">12×12</button>
+        </div>
+      </div>
+
+      <div class="panel" id="palettePanel">
+        <h2 id="paletteTitle">색 고르기</h2>
+        <div class="palette" id="palette"></div>
+        <div class="binlegend" id="binLegend" style="display:none;">
+          <span class="off"></span>0 = 흰색 &nbsp; <span class="on"></span>1 = 검은색
+        </div>
+      </div>
+
+      <div class="panel">
+        <button class="btn primary" id="checkBtn">정답 확인</button>
+        <button class="btn" id="resetBtn">초기화</button>
+      </div>
+    </div>
+
+    <div class="canvas-area">
+      <div class="grid-title" id="gridTitle">문제를 골라보세요</div>
+      <div class="gridbox"><div class="grid" id="mainGrid"></div></div>
+      <div class="score" id="scoreText"></div>
+    </div>
+  </main>
+
+  <footer>각 칸에 적힌 숫자를 보고 칸을 눌러 색을 채우세요. 다 채웠으면 '정답 확인'을 눌러보세요.</footer>
+</div>
+
+<script>
+const puzzles = {
+  binary: [
+    { name: "화살표 그림 (6×6)", rows:6, cols:6, data:[
+      [0,0,1,1,0,0],[0,1,1,1,0,0],[0,0,1,1,0,0],
+      [0,0,1,1,0,0],[0,0,1,1,0,0],[0,1,1,1,1,0]
+    ]},
+    { name: "더하기 그림 (8×8)", rows:8, cols:8, data:[
+      [0,0,0,0,1,0,0,0],[0,0,0,0,1,1,0,0],[0,0,0,0,1,1,1,0],[1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1],[0,0,0,0,1,1,1,0],[0,0,0,0,1,1,0,0],[0,0,0,0,1,0,0,0]
+    ]},
+    { name: "신비한 문양 (8×8)", rows:8, cols:8, data:[
+      [0,1,1,1,1,1,1,0],[1,1,1,1,1,1,1,1],[1,1,0,0,0,0,1,1],[1,1,0,0,0,0,0,0],
+      [1,1,0,0,1,1,1,1],[1,1,0,0,0,0,1,1],[1,1,1,0,0,0,1,1],[0,1,1,1,1,1,1,0]
+    ]},
+    { name: "가려진 그림 (8×8)", rows:8, cols:8, data:[
+      [0,0,0,1,1,1,1,1],[0,1,1,1,1,0,0,0],[1,1,1,1,1,1,1,1],[1,0,0,0,0,0,0,1],
+      [1,0,1,0,0,1,0,1],[1,0,0,0,0,0,0,1],[1,0,0,1,1,0,0,1],[0,1,1,1,1,1,1,0]
+    ]}
+  ],
+  color: [
+    { name: "숨은 그림 1 (8×8)", rows:8, cols:8, data:[
+      [0,0,3,3,3,0,0,0],[3,3,3,3,3,3,0,2],[0,4,4,1,4,1,0,3],[1,4,4,4,4,4,0,3],
+      [3,3,3,3,2,3,1,3],[0,0,3,2,2,2,0,3],[0,1,3,3,2,3,0,2],[0,1,0,0,0,1,1,0]
+    ]},
+    { name: "숨은 그림 2 (10×10)", rows:10, cols:10, data:[
+      [0,1,1,0,0,0,0,1,1,0],[1,1,0,0,0,0,0,0,0,0],[1,0,0,0,2,2,0,0,0,0],[0,0,0,2,2,2,2,0,0,0],
+      [0,0,2,2,2,3,3,2,0,0],[0,0,3,2,3,3,3,3,0,0],[0,0,0,3,3,3,3,0,0,0],[0,0,0,0,3,3,0,0,0,0],
+      [1,1,0,0,0,0,0,0,1,1],[0,1,1,0,0,0,0,0,1,0]
+    ]},
+    { name: "숨은 그림 3 (12×12)", rows:12, cols:12, data:[
+      [4,4,4,4,1,1,1,1,4,4,4,4],[4,4,1,1,3,3,3,3,1,1,4,4],[4,1,2,2,3,3,3,3,2,2,1,4],[4,1,2,2,3,3,3,3,2,2,1,4],
+      [1,3,3,3,3,3,3,3,3,3,3,1],[1,3,3,3,3,1,1,3,3,3,3,1],[1,1,3,3,1,0,0,1,3,3,1,1],[1,0,1,1,1,0,0,1,1,1,0,1],
+      [4,1,0,0,0,1,1,0,0,0,1,4],[4,1,0,0,0,0,0,0,0,0,1,4],[4,4,1,1,0,0,0,0,1,1,4,4],[4,4,4,4,1,1,1,1,4,4,4,4]
+    ]},
+    { name: "숨은 그림 4 (16×16)", rows:16, cols:16, data:[
+      [0,0,0,0,0,2,2,2,2,2,0,0,0,0,0,0],[0,0,0,0,2,2,2,2,2,2,2,2,2,0,0,0],
+      [0,0,0,0,1,1,1,4,4,1,4,0,0,0,0,0],[0,0,0,1,4,1,4,4,4,1,4,4,4,0,0,0],
+      [0,0,0,1,4,1,1,4,4,4,1,4,4,4,0,0],[0,0,0,0,1,4,4,4,4,1,1,1,1,0,0,0],
+      [0,0,0,0,0,4,4,4,4,4,4,0,0,0,0,0],[0,0,0,0,2,2,3,2,2,3,2,2,0,0,0,0],
+      [0,0,0,2,2,2,3,2,2,3,2,2,2,0,0,0],[0,0,2,2,2,2,3,3,3,3,2,2,2,2,0,0],
+      [0,0,4,4,2,3,4,3,3,4,3,2,4,4,0,0],[0,0,4,4,4,3,3,3,3,3,3,4,4,4,0,0],
+      [0,0,4,4,3,3,3,3,3,3,3,3,4,4,0,0],[0,0,0,0,3,3,3,0,0,3,3,3,0,0,0,0],
+      [0,0,0,1,1,1,0,0,0,0,1,1,1,0,0,0],[0,0,1,1,1,1,0,0,0,0,1,1,1,1,0,0]
+    ]}
+  ]
+};
+
+const state = {
+  category: 'binary',
+  activityMode: 'solve',
+  puzzleIndex: 0,
+  freeSize: 8,
+  rows: 6, cols: 6,
+  grid: [],
+  status: [],
+  activeColor: 1,
+  showPreview: false
+};
+
+const el = (id) => document.getElementById(id);
+
+function makeEmptyGrid(rows, cols){
+  return Array.from({length: rows}, () => Array.from({length: cols}, () => 0));
+}
+function makeEmptyStatus(rows, cols){
+  return Array.from({length: rows}, () => Array.from({length: cols}, () => ''));
+}
+
+function currentPuzzle(){
+  return puzzles[state.category][state.puzzleIndex];
+}
+
+function loadPuzzle(){
+  const p = currentPuzzle();
+  state.rows = p.rows;
+  state.cols = p.cols;
+  state.grid = makeEmptyGrid(p.rows, p.cols);
+  state.status = makeEmptyStatus(p.rows, p.cols);
+  el('gridTitle').textContent = p.name;
+  el('scoreText').textContent = '';
+  el('scoreText').className = 'score';
+  state.showPreview = false;
+  el('preview').classList.remove('show');
+  renderPreview();
+  renderGrid();
+}
+
+function loadFree(){
+  const n = state.freeSize;
+  state.rows = n; state.cols = n;
+  state.grid = makeEmptyGrid(n, n);
+  state.status = makeEmptyStatus(n, n);
+  el('gridTitle').textContent = '자유롭게 그려보세요';
+  el('scoreText').textContent = '';
+  el('scoreText').className = 'score';
+  renderGrid();
+}
+
+function renderPuzzleSelect(){
+  const sel = el('puzzleSelect');
+  sel.innerHTML = '';
+  puzzles[state.category].forEach((p, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = p.name;
+    sel.appendChild(opt);
+  });
+  sel.value = state.puzzleIndex;
+}
+
+function renderPalette(){
+  const pal = el('palette');
+  pal.innerHTML = '';
+  el('binLegend').style.display = state.category === 'binary' ? 'block' : 'none';
+  el('paletteTitle').textContent = state.category === 'binary' ? '색 고르기 (칸을 누르면 색이 바뀌어요)' : '색 고르기';
+  if(state.category === 'binary'){
+    pal.style.display = 'none';
+    return;
+  }
+  pal.style.display = 'flex';
+  for(let v=0; v<=4; v++){
+    const sw = document.createElement('button');
+    sw.className = 'swatch' + (v === state.activeColor ? ' selected' : '');
+    sw.dataset.v = v;
+    sw.textContent = v === 0 ? '×' : v;
+    sw.setAttribute('aria-label', v === 0 ? '지우기' : ('색 코드 ' + v));
+    sw.addEventListener('click', () => {
+      state.activeColor = v;
+      renderPalette();
+    });
+    pal.appendChild(sw);
+  }
+}
+
+function cellClassFor(v){
+  if(state.category === 'binary') return v === 1 ? 'on' : '';
+  return v === 0 ? '' : ('v' + v);
+}
+
+function renderGrid(){
+  const grid = el('mainGrid');
+  grid.style.gridTemplateColumns = `repeat(${state.cols}, 1fr)`;
+  grid.innerHTML = '';
+  for(let r=0; r<state.rows; r++){
+    for(let c=0; c<state.cols; c++){
+      const btn = document.createElement('button');
+      const v = state.grid[r][c];
+      const st = state.status[r][c];
+      btn.className = 'cell ' + cellClassFor(v) + (st ? (' status-' + st) : '');
+      let labelVal = null;
+      if(state.activityMode === 'solve'){
+        labelVal = currentPuzzle().data[r][c];
+      }
+      if(labelVal !== null){
+        const lab = document.createElement('span');
+        lab.className = 'numlabel';
+        lab.textContent = labelVal;
+        btn.appendChild(lab);
+      }
+      btn.setAttribute('aria-label', `${r+1}행 ${c+1}열, 숫자 ${labelVal !== null ? labelVal : ''}`);
+      btn.addEventListener('click', () => handleCellClick(r, c, btn));
+      grid.appendChild(btn);
+    }
+  }
+}
+
+function handleCellClick(r, c, btn){
+  if(state.category === 'binary'){
+    state.grid[r][c] = state.grid[r][c] === 1 ? 0 : 1;
+  } else {
+    state.grid[r][c] = state.activeColor;
+  }
+  state.status[r][c] = '';
+  btn.classList.remove('status-correct', 'status-wrong');
+  btn.className = 'cell ' + cellClassFor(state.grid[r][c]);
+  btn.classList.add('flash');
+  setTimeout(() => btn.classList.remove('flash'), 500);
+}
+
+function renderPreview(){
+  if(state.activityMode !== 'solve') return;
+  const p = currentPuzzle();
+  const pg = el('previewGrid');
+  pg.style.gridTemplateColumns = `repeat(${p.cols}, 1fr)`;
+  pg.innerHTML = '';
+  p.data.forEach(row => row.forEach(v => {
+    const d = document.createElement('div');
+    d.className = 'cell ' + cellClassFor(v);
+    pg.appendChild(d);
+  }));
+}
+
+function checkAnswer(){
+  if(state.activityMode !== 'solve') return;
+  const p = currentPuzzle();
+  const cells = el('mainGrid').children;
+  let correct = 0, total = 0, filled = 0;
+  for(let r=0; r<state.rows; r++){
+    for(let c=0; c<state.cols; c++){
+      const idx = r * state.cols + c;
+      const target = p.data[r][c];
+      const val = state.grid[r][c];
+      total++;
+      if(target !== 0) filled++;
+      const cellEl = cells[idx];
+      cellEl.classList.remove('status-correct', 'status-wrong');
+      if(val === target){
+        correct++;
+        if(target !== 0) cellEl.classList.add('status-correct');
+        state.status[r][c] = target !== 0 ? 'correct' : '';
+      } else {
+        cellEl.classList.add('status-wrong');
+        state.status[r][c] = 'wrong';
+      }
+    }
+  }
+  const scoreEl = el('scoreText');
+  if(correct === total){
+    scoreEl.textContent = '정답입니다! 그림을 완성했어요 🎉';
+    scoreEl.className = 'score good';
+    el('mainGrid').classList.add('celebrate');
+    setTimeout(() => el('mainGrid').classList.remove('celebrate'), 900);
+  } else {
+    scoreEl.textContent = `${total}칸 중 ${correct}칸 맞았어요. 빨간 테두리 칸을 다시 확인해보세요.`;
+    scoreEl.className = 'score bad';
+  }
+}
+
+function resetCurrent(){
+  if(state.activityMode === 'solve') loadPuzzle();
+  else loadFree();
+}
+
+// -- 이벤트 연결 --
+el('categorySeg').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  [...el('categorySeg').children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.category = btn.dataset.cat;
+  state.puzzleIndex = 0;
+  state.activeColor = state.category === 'binary' ? 1 : 1;
+  renderPuzzleSelect();
+  renderPalette();
+  if(state.activityMode === 'solve') loadPuzzle();
+  else loadFree();
+});
+
+el('modeSeg').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if(!btn) return;
+  [...el('modeSeg').children].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.activityMode = btn.dataset.mode;
+  const isSolve = state.activityMode === 'solve';
+  el('puzzlePanel').style.display = isSolve ? 'block' : 'none';
+  el('sizePanel').style.display = isSolve ? 'none' : 'block';
+  el('checkBtn').style.display = isSolve ? 'block' : 'none';
+  if(isSolve) loadPuzzle();
+  else loadFree();
+});
+
+el('puzzleSelect').addEventListener('change', (e) => {
+  state.puzzleIndex = Number(e.target.value);
+  loadPuzzle();
+});
+
+el('sizePanel').addEventListener('click', (e) => {
+  const btn = e.target.closest('button[data-size]');
+  if(!btn) return;
+  [...el('sizePanel').querySelectorAll('button')].forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.freeSize = Number(btn.dataset.size);
+  loadFree();
+});
+
+el('previewToggle').addEventListener('click', () => {
+  state.showPreview = !state.showPreview;
+  el('preview').classList.toggle('show', state.showPreview);
+});
+
+el('checkBtn').addEventListener('click', checkAnswer);
+el('resetBtn').addEventListener('click', resetCurrent);
+
+// -- 초기 렌더 --
+renderPuzzleSelect();
+renderPalette();
+loadPuzzle();
+</script>
+</body>
+</html>
