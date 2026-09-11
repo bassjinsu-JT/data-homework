@@ -1,322 +1,330 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>벡터 그림 그리기 - 4문제 도전</title>
-    <style>
-        body {
-            font-family: 'Malgun Gothic', sans-serif;
-            background-color: #f4f7f6;
-            color: #333;
-            margin: 0;
-            padding: 20px;
-        }
-        .container {
-            max-width: 650px;
-            margin: 0 auto;
-        }
-        h1 { text-align: center; color: #2c3e50; font-size: 1.4rem; margin-bottom: 5px; }
-        .subtitle { text-align: center; color: #7f8c8d; font-size: 0.9rem; margin-bottom: 20px; }
-        
-        .card {
-            background: #ffffff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-            margin-bottom: 25px;
-            border-left: 5px solid #27ae60;
-        }
-        .card-title {
-            font-size: 1.05rem;
-            font-weight: bold;
-            color: #27ae60;
-            margin-bottom: 8px;
-        }
-        .card-desc {
-            font-size: 0.88rem;
-            color: #555;
-            margin-bottom: 12px;
-            line-height: 1.4;
-        }
-        
-        .canvas-box {
-            display: flex;
-            justify-content: center;
-            margin-bottom: 12px;
-        }
-        canvas {
-            border: 2px solid #bdc3c7;
-            background-color: #fff;
-            cursor: crosshair;
-            border-radius: 4px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>픽셀 그림 문제 만들기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFEAE0;
+    --panel:#F8F5EE;
+    --ink:#242321;
+    --line:#CFC7B0;
+    --accent:#C1443C;
+    --good:#3E7C59;
+    --bad:#C1443C;
+    --cover:#D9D2BE;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:22px 22px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{ max-width:1000px; margin:0 auto; padding:28px 20px 60px; }
+  header h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(24px, 4vw, 34px);
+    letter-spacing:-0.01em;
+    margin:0 0 6px;
+  }
+  header h1 .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.4em;
+    font-weight:500;
+    background:var(--ink);
+    color:var(--bg);
+    padding:3px 8px;
+    border-radius:4px;
+    vertical-align:middle;
+    margin-left:10px;
+  }
+  header p{ margin:0 0 16px; color:#5a5648; font-size:15px; line-height:1.6; max-width:680px; }
 
-        .control-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 10px;
-        }
-        .btn-group {
-            display: flex;
-            gap: 6px;
-        }
-        .btn {
-            background-color: #27ae60;
-            color: white;
-            border: none;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 0.8rem;
-        }
-        .btn:hover { background-color: #1e8449; }
-        .btn-reset { background-color: #7f8c8d; }
-        .btn-reset:hover { background-color: #626567; }
-        
-        .feedback {
-            font-size: 0.85rem;
-            font-weight: bold;
-        }
-    </style>
+  .panel{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+  .panel h2{ font-size:14px; font-weight:600; margin:0 0 10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+  .steps{ margin:0; padding-left:20px; font-size:13.5px; line-height:1.85; color:#3a382f; }
+
+  .example-row{ display:flex; align-items:center; gap:16px; margin-top:12px; flex-wrap:wrap; }
+  .example-grid{ width:120px; }
+  .example-grid .grid{ display:grid; grid-template-columns:repeat(8,1fr); border:2px solid var(--ink); background:#fff; }
+  .example-grid .cell{ aspect-ratio:1/1; border:1px solid var(--line); }
+  .example-grid .cell.on{ background:var(--ink); }
+  .example-label{ font-size:12px; color:#8b8570; }
+
+  .stage{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px 18px;
+    margin-bottom:18px;
+  }
+  .stage-title{ font-size:15px; font-weight:700; margin-bottom:6px; }
+  .stage-sub{ font-size:13px; color:#5a5648; margin-bottom:14px; }
+  .stage-body{ display:flex; gap:22px; flex-wrap:wrap; align-items:flex-start; }
+
+  .gridbox{ width:280px; max-width:100%; flex-shrink:0; }
+  .gridbox .grid{ display:grid; grid-template-columns:repeat(8,1fr); border:2px solid var(--ink); background:#fff; position:relative; }
+  .gridbox .cell{
+    aspect-ratio:1/1; border:1px solid var(--line); background:#fff; cursor:pointer; padding:0;
+  }
+  .gridbox .cell.on{ background:var(--ink); }
+  .gridbox .cell.diff{ outline:2px solid var(--bad); outline-offset:-2px; }
+  .gridbox .cell:focus-visible{ outline:3px solid #3B5BA5; outline-offset:2px; }
+  .gridbox.readonly .cell{ cursor:default; }
+  .cover-overlay{
+    position:absolute; inset:0; background:var(--cover);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:13px; font-weight:600; color:#5a5648; padding:14px;
+    border:2px dashed #8b8570;
+  }
+
+  .numbers-box{
+    flex:1; min-width:220px;
+    background:#fff; border:2px solid var(--ink); border-radius:5px; padding:12px 14px;
+    font-family:'IBM Plex Mono', monospace; font-size:14px; line-height:1.9; letter-spacing:2px;
+    min-height:60px;
+    color:var(--ink);
+  }
+  .numbers-box .row-empty{ color:#c3bca6; }
+
+  .btn{
+    padding:9px 14px; font-family:inherit; font-weight:600; font-size:13px;
+    border:2px solid var(--ink); border-radius:5px; background:#fff; color:var(--ink); cursor:pointer;
+    margin-right:8px; margin-top:10px;
+  }
+  .btn:hover{ background:var(--ink); color:var(--bg); }
+  .btn.primary{ background:var(--ink); color:var(--bg); }
+  .btn.primary:hover{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .btn:focus-visible{ outline:3px solid #3B5BA5; outline-offset:2px; }
+
+  .feedback{ font-size:13.5px; font-weight:600; margin-top:12px; min-height:20px; }
+  .feedback.good{ color:var(--good); }
+  .feedback.bad{ color:var(--bad); }
+  .hint-note{ font-size:12px; color:#8b8570; margin-top:6px; }
+
+  @media (prefers-reduced-motion:no-preference){
+    .cell.flash{ animation:flashcell .3s ease; }
+    @keyframes flashcell{ 0%{ transform:scale(1);} 40%{ transform:scale(0.85);} 100%{ transform:scale(1);} }
+    .celebrate{ animation:celebrate .8s ease; }
+    @keyframes celebrate{ 0%,100%{ box-shadow:0 0 0 0 transparent;} 50%{ box-shadow:0 0 0 6px #E3A72F;} }
+  }
+  footer{ text-align:center; font-size:12px; color:#8b8570; margin-top:26px; }
+</style>
 </head>
 <body>
+<div class="wrap">
+  <header>
+    <h1>픽셀 그림 문제 만들기<span class="tag">2인 협동</span></h1>
+    <p>원래는 친구와 함께 하는 활동이지만, 혼자서도 '내가 그린 그림 → 숫자로 바꾸기 → 숫자만 보고 다시 그리기' 순서로 연습해 볼 수 있어요.</p>
+  </header>
 
-<div class="container">
-    <h1>벡터 그림 그리기 실습</h1>
-    <div class="subtitle">제시된 좌표 순서대로 격자 교차점을 클릭하여 선을 잇고 벡터 그림을 완성해 보세요!</div>
-
-    <!-- 문제 1 -->
-    <div class="card">
-        <div class="card-title">문제 1. 마름모 그리기</div>
-        <div class="card-desc">
-            <b>연결 순서:</b> F8 → C5 → F2 → I5 → F8 (닫힌 선)<br>
-            * 추가 선분: C2 → I2
-        </div>
-        <div class="canvas-box"><canvas id="canvas-1" width="320" height="320"></canvas></div>
-        <div class="control-row">
-            <div class="btn-group">
-                <button class="btn" onclick="checkProblem(1)">정답 확인</button>
-                <button class="btn btn-reset" onclick="resetProblem(1)">다시 그리기</button>
-            </div>
-            <span class="feedback" id="fb-1"></span>
-        </div>
+  <div class="panel">
+    <h2>활동 순서</h2>
+    <ol class="steps">
+      <li>1번 칸에 원하는 대로 색을 칠해 픽셀 그림을 그립니다.</li>
+      <li>그린 그림이 자동으로 0과 1의 숫자로 바뀌어 2번 칸에 나타납니다.</li>
+      <li>'1번 그림 가리기'를 눌러 내가 그린 그림을 가립니다.</li>
+      <li>숫자만 보고 3번 칸에 그림을 다시 그려 완성합니다.</li>
+      <li>'비교하기'를 눌러 1번 그림과 3번 그림이 같은지 확인합니다.</li>
+    </ol>
+    <div class="example-row">
+      <div class="example-grid"><div class="grid" id="exampleGrid"></div></div>
+      <div class="example-label">픽셀 그림 예시 — 참고용이에요. '예시로 채우기' 버튼으로 1번 칸에 바로 넣어볼 수도 있어요.</div>
     </div>
+  </div>
 
-    <!-- 문제 2 -->
-    <div class="card" style="border-left-color: #2980b9;">
-        <div class="card-title" style="color: #2980b9;">문제 2. 별모양 / 다각형 잇기</div>
-        <div class="card-desc">
-            <b>연결 순서:</b> H9 → D5 → F5 → D1 → I6 → G6 → H9
-        </div>
-        <div class="canvas-box"><canvas id="canvas-2" width="320" height="320"></canvas></div>
-        <div class="control-row">
-            <div class="btn-group">
-                <button class="btn" style="background:#2980b9;" onclick="checkProblem(2)">정답 확인</button>
-                <button class="btn btn-reset" onclick="resetProblem(2)">다시 그리기</button>
-            </div>
-            <span class="feedback" id="fb-2"></span>
-        </div>
+  <div class="stage">
+    <div class="stage-title">1. 픽셀 그림 그리기</div>
+    <div class="stage-sub">칸을 눌러 원하는 그림을 그려보세요.</div>
+    <div class="stage-body">
+      <div class="gridbox"><div class="grid" id="grid1"></div></div>
+      <div>
+        <button class="btn" id="fillExampleBtn">예시로 채우기</button>
+        <button class="btn" id="clearGrid1Btn">지우기</button>
+      </div>
     </div>
+  </div>
 
-    <!-- 문제 3 -->
-    <div class="card" style="border-left-color: #e67e22;">
-        <div class="card-title" style="color: #e67e22;">문제 3. 집 모양 그리기</div>
-        <div class="card-desc">
-            <b>1번 선:</b> D9 → B7 → A4 → C1 → F0 → I1 → K4 → J7 → H9 → D9<br>
-            <b>2번 선:</b> D9 → B10 → A8 → B7
-        </div>
-        <div class="canvas-box"><canvas id="canvas-3" width="320" height="320"></canvas></div>
-        <div class="control-row">
-            <div class="btn-group">
-                <button class="btn" style="background:#e67e22;" onclick="checkProblem(3)">정답 확인</button>
-                <button class="btn btn-reset" onclick="resetProblem(3)">다시 그리기</button>
-            </div>
-            <span class="feedback" id="fb-3"></span>
-        </div>
+  <div class="stage">
+    <div class="stage-title">2. 숫자로 바꾸기</div>
+    <div class="stage-sub">1번 그림이 자동으로 숫자로 바뀝니다. (1 = 색칠한 칸, 0 = 빈 칸)</div>
+    <div class="numbers-box" id="numbersBox"></div>
+  </div>
+
+  <div class="stage">
+    <div class="stage-title">3. 다시 그림으로 바꾸기</div>
+    <div class="stage-sub">위의 숫자만 보고, 1번 그림은 보지 않고 그려보세요.</div>
+    <div class="stage-body">
+      <div class="gridbox"><div class="grid" id="grid3"></div></div>
+      <div>
+        <button class="btn" id="coverBtn">1번 그림 가리기</button>
+        <button class="btn" id="clearGrid3Btn">3번 지우기</button>
+        <button class="btn primary" id="compareBtn">비교하기</button>
+        <div class="feedback" id="feedback"></div>
+        <div class="hint-note">틀린 칸이 있다면 3번 그림에 빨간 테두리로 표시돼요.</div>
+      </div>
     </div>
+  </div>
 
-    <!-- 문제 4 -->
-    <div class="card" style="border-left-color: #8e44ad;">
-        <div class="card-title" style="color: #8e44ad;">문제 4. 화살표 그리기</div>
-        <div class="card-desc">
-            <b>1번 선:</b> E9 → B6 → D6 → D1 → F1 → F6 → H6 → E9
-        </div>
-        <div class="canvas-box"><canvas id="canvas-4" width="320" height="320"></canvas></div>
-        <div class="control-row">
-            <div class="btn-group">
-                <button class="btn" style="background:#8e44ad;" onclick="checkProblem(4)">정답 확인</button>
-                <button class="btn btn-reset" onclick="resetProblem(4)">다시 그리기</button>
-            </div>
-            <span class="feedback" id="fb-4"></span>
-        </div>
-    </div>
-
+  <footer>혼자 연습할 때도 실제 활동처럼 1번 그림을 가리고 3번을 채워보면 더 재미있어요.</footer>
 </div>
 
 <script>
-    const cols = ['A','B','C','D','E','F','G','H','I','J','K'];
-    
-    // 각 문제별 정답 경로 정의
-    const solutions = {
-        1: [
-            ['F8', 'C5', 'F2', 'I5', 'F8'],
-            ['C2', 'I2']
-        ],
-        2: [
-            ['H9', 'D5', 'F5', 'D1', 'I6', 'G6', 'H9']
-        ],
-        3: [
-            ['D9', 'B7', 'A4', 'C1', 'F0', 'I1', 'K4', 'J7', 'H9', 'D9'],
-            ['D9', 'B10', 'A8', 'B7']
-        ],
-        4: [
-            ['E9', 'B6', 'D6', 'D1', 'F1', 'F6', 'H6', 'E9']
-        ]
-    };
+const N = 8;
+const example = [
+  [0,1,1,1,1,1,1,0],
+  [1,0,1,0,0,1,0,1],
+  [1,0,0,0,0,0,0,1],
+  [1,0,1,0,0,1,0,1],
+  [1,0,0,1,1,0,0,1],
+  [1,0,0,0,0,0,0,1],
+  [0,1,1,1,1,1,1,0],
+  [0,1,0,0,0,0,1,0]
+];
 
-    let userClicks = { 1: [], 2: [], 3: [], 4: [] };
+let grid1 = Array.from({length:N}, () => Array.from({length:N}, () => 0));
+let grid3 = Array.from({length:N}, () => Array.from({length:N}, () => 0));
+let covered = false;
 
-    function getCanvasCoords(e, canvas) {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        
-        const padding = 30;
-        const gridW = canvas.width - padding * 2;
-        const gridH = canvas.height - padding * 2;
-        const step = gridW / 10;
+const el = (id) => document.getElementById(id);
 
-        let bestCol = -1, bestRow = -1;
-        let minDist = 999;
+function buildStatic(container, data){
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${N},1fr)`;
+  for(let r=0;r<N;r++) for(let c=0;c<N;c++){
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (data[r][c] ? ' on' : '');
+    container.appendChild(cell);
+  }
+}
+buildStatic(el('exampleGrid'), example);
 
-        for (let c = 0; c <= 10; c++) {
-            for (let r = 0; r <= 10; r++) {
-                let px = padding + c * step;
-                let py = padding + (10 - r) * step;
-                let dist = Math.hypot(px - x, py - y);
-                if (dist < minDist && dist < 15) { // 클릭 허용 반경 15px
-                    minDist = dist;
-                    bestCol = c;
-                    bestRow = r;
-                }
-            }
-        }
-
-        if (bestCol !== -1 && bestRow !== -1) {
-            return cols[bestCol] + bestRow;
-        }
-        return null;
+function renderGrid1(){
+  const container = el('grid1');
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${N},1fr)`;
+  const wrap = container.parentElement;
+  let overlay = wrap.querySelector('.cover-overlay');
+  if(overlay) overlay.remove();
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cell' + (grid1[r][c] ? ' on' : '');
+      btn.setAttribute('aria-label', `1번 그림 ${r+1}행 ${c+1}열`);
+      btn.addEventListener('click', () => {
+        grid1[r][c] = grid1[r][c] ? 0 : 1;
+        renderGrid1();
+        renderNumbers();
+      });
+      container.appendChild(btn);
     }
+  }
+  if(covered){
+    const ov = document.createElement('div');
+    ov.className = 'cover-overlay';
+    ov.textContent = '가려짐 — 숫자만 보고 3번 칸을 채워보세요';
+    wrap.appendChild(ov);
+  }
+}
 
-    function drawGrid(canvasId, clickedPoints = []) {
-        const canvas = document.getElementById(canvasId);
-        const ctx = canvas.getContext('2d');
-        const width = canvas.width;
-        const height = canvas.height;
-        const padding = 30;
-        const step = (width - padding * 2) / 10;
-
-        ctx.clearRect(0, 0, width, height);
-
-        // 격자 그리기
-        ctx.strokeStyle = '#ecf0f1';
-        ctx.fillStyle = '#7f8c8d';
-        ctx.font = '9px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-
-        for (let i = 0; i <= 10; i++) {
-            let pos = padding + i * step;
-            // 세로선
-            ctx.beginPath(); ctx.moveTo(pos, padding); ctx.lineTo(pos, height - padding); ctx.stroke();
-            // 가로선
-            ctx.beginPath(); ctx.moveTo(padding, pos); ctx.lineTo(width - padding, pos); ctx.stroke();
-
-            if (i < cols.length) ctx.fillText(cols[i], padding + i * step, height - padding + 12);
-            ctx.fillText(10 - i, padding - 12, padding + i * step);
-        }
-
-        // 사용자가 클릭해서 쌓은 점들을 순서대로 선으로 연결
-        if (clickedPoints.length > 1) {
-            ctx.strokeStyle = '#e67e22';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath();
-            let start = parseCoordToPixel(clickedPoints[0], canvas);
-            ctx.moveTo(start.x, start.y);
-            for (let i = 1; i < clickedPoints.length; i++) {
-                let pt = parseCoordToPixel(clickedPoints[i], canvas);
-                ctx.lineTo(pt.x, pt.y);
-            }
-            ctx.stroke();
-        }
-
-        // 클릭된 정점(점) 표시
-        clickedPoints.forEach(ptStr => {
-            let pt = parseCoordToPixel(ptStr, canvas);
-            ctx.fillStyle = '#c0392b';
-            ctx.beginPath();
-            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
-            ctx.fill();
-        });
+function renderGrid3(){
+  const container = el('grid3');
+  container.innerHTML = '';
+  container.style.gridTemplateColumns = `repeat(${N},1fr)`;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cell' + (grid3[r][c] ? ' on' : '');
+      btn.setAttribute('aria-label', `3번 그림 ${r+1}행 ${c+1}열`);
+      btn.addEventListener('click', () => {
+        grid3[r][c] = grid3[r][c] ? 0 : 1;
+        renderGrid3();
+        el('feedback').textContent = '';
+        el('feedback').className = 'feedback';
+      });
+      container.appendChild(btn);
     }
+  }
+}
 
-    function parseCoordToPixel(coordStr, canvas) {
-        const padding = 30;
-        const step = (canvas.width - padding * 2) / 10;
-        let cIdx = cols.indexOf(coordStr[0]);
-        let rNum = parseInt(coordStr.substring(1));
-        return {
-            x: padding + cIdx * step,
-            y: padding + (10 - rNum) * step
-        };
+function renderNumbers(){
+  const box = el('numbersBox');
+  const anyFilled = grid1.some(row => row.some(v => v));
+  if(!anyFilled){
+    box.innerHTML = '<span class="row-empty">1번 칸에 그림을 그리면 여기에 숫자가 나타나요.</span>';
+    return;
+  }
+  box.innerHTML = grid1.map(row => row.join(' ')).join('<br>');
+}
+
+el('fillExampleBtn').addEventListener('click', () => {
+  grid1 = example.map(row => row.slice());
+  renderGrid1();
+  renderNumbers();
+});
+el('clearGrid1Btn').addEventListener('click', () => {
+  grid1 = Array.from({length:N}, () => Array.from({length:N}, () => 0));
+  renderGrid1();
+  renderNumbers();
+});
+el('clearGrid3Btn').addEventListener('click', () => {
+  grid3 = Array.from({length:N}, () => Array.from({length:N}, () => 0));
+  renderGrid3();
+  el('feedback').textContent = '';
+  el('feedback').className = 'feedback';
+});
+el('coverBtn').addEventListener('click', () => {
+  covered = !covered;
+  el('coverBtn').textContent = covered ? '1번 그림 보이기' : '1번 그림 가리기';
+  renderGrid1();
+});
+el('compareBtn').addEventListener('click', () => {
+  const cells3 = el('grid3').children;
+  let correct = 0;
+  for(let r=0;r<N;r++){
+    for(let c=0;c<N;c++){
+      const idx = r*N+c;
+      const same = grid1[r][c] === grid3[r][c];
+      cells3[idx].classList.toggle('diff', !same);
+      if(same) correct++;
     }
+  }
+  const feedback = el('feedback');
+  const total = N*N;
+  if(correct === total){
+    feedback.textContent = '완벽해요! 두 그림이 똑같아요 🎉';
+    feedback.className = 'feedback good';
+    el('grid3').classList.add('celebrate');
+    setTimeout(() => el('grid3').classList.remove('celebrate'), 800);
+  } else {
+    feedback.textContent = `${total}칸 중 ${correct}칸이 같아요. 빨간 테두리 칸을 다시 살펴보세요.`;
+    feedback.className = 'feedback bad';
+  }
+});
 
-    function initAllCanvas() {
-        for (let i = 1; i <= 4; i++) {
-            const canvas = document.getElementById(`canvas-${i}`);
-            drawGrid(`canvas-${i}`, userClicks[i]);
-
-            canvas.onclick = (e) => {
-                let coord = getCanvasCoords(e, canvas);
-                if (coord) {
-                    userClicks[i].push(coord);
-                    drawGrid(`canvas-${i}`, userClicks[i]);
-                }
-            };
-        }
-    }
-
-    function resetProblem(num) {
-        userClicks[num] = [];
-        document.getElementById(`fb-${num}`).innerText = "";
-        drawGrid(`canvas-${num}`, userClicks[num]);
-    }
-
-    function checkProblem(num) {
-        let userPath = userClicks[num];
-        let correctPaths = solutions[num];
-        let fb = document.getElementById(`fb-${num}`);
-
-        // 유저가 그린 전체 경로가 정답 배열 중 하나와 순서/노드가 정확히 일치하는지 간단 비교
-        let matched = correctPaths.some(path => {
-            if (path.length !== userPath.length) return false;
-            return path.every((pt, idx) => pt === userPath[idx]);
-        });
-
-        if (matched) {
-            fb.innerText = "🎉 정답입니다! 벡터 선이 완벽하게 연결되었어요.";
-            fb.style.color = "#27ae60";
-        } else {
-            fb.innerText = "❌ 좌표 순서나 선 모양이 다릅니다. 다시 시도해 보세요.";
-            fb.style.color = "#c0392b";
-        }
-    }
-
-    window.onload = initAllCanvas;
+renderGrid1();
+renderGrid3();
+renderNumbers();
 </script>
-
 </body>
 </html>
