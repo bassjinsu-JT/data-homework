@@ -1,0 +1,183 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>네모네모 컬러 픽셀</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
+<style>
+/* Layout: 작업창 하나 — 왼쪽 14×14 격자, 오른쪽 색상 코드 팔레트 (좁으면 위아래로) */
+:root{
+  --bg:#e9ecef; --panel:#ffffff; --ink:#1d2126; --muted:#5d6670; --line:#1d2126;
+  --bar:#c9ced4; --accent:#1f6feb; --ok:#1a9e4b; --bad:#e5383b;
+  --display:"Jua","Gowun Dodum",system-ui,sans-serif;
+  --body:"Gowun Dodum",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15181c; --panel:#1f2329; --ink:#eef1f4; --muted:#9aa4ae; --line:#0b0d10;
+  --bar:#2c3239; --accent:#5b9bff; --ok:#3ccf74; --bad:#ff6b6e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15181c; --panel:#1f2329; --ink:#eef1f4; --muted:#9aa4ae; --line:#0b0d10;
+  --bar:#2c3239; --accent:#5b9bff; --ok:#3ccf74; --bad:#ff6b6e; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);padding-inline:16px;padding-block:20px}
+.win{max-width:1040px;margin:0 auto;background:var(--panel);border:3px solid var(--line);border-radius:18px;overflow:hidden}
+.titlebar{display:flex;align-items:center;gap:12px;background:var(--bar);padding:10px 16px;border-bottom:3px solid var(--line)}
+.titlebar h1{font-family:var(--display);font-weight:400;font-size:clamp(18px,3vw,26px);margin:0;flex:1;text-wrap:balance}
+.dots{display:flex;gap:6px}.dots i{width:12px;height:12px;border-radius:50%;border:2px solid var(--line);display:block}
+.tabs{display:flex;flex-wrap:wrap;gap:8px;padding:14px 16px 0}
+.tab{font-family:var(--display);font-size:17px;padding:8px 16px;border:2px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--ink);color:var(--panel)}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:18px;padding:16px}
+@media (max-width:760px){.main{grid-template-columns:minmax(0,1fr)}}
+.board{min-width:0}
+.grid{display:grid;grid-template-columns:repeat(14,1fr);border:3px solid var(--line);background:var(--line);gap:2px;width:100%;max-width:620px;aspect-ratio:1;touch-action:none;user-select:none;margin:0 auto}
+.cell{display:flex;align-items:center;justify-content:center;font-family:var(--display);font-size:clamp(9px,1.9vw,16px);background:#fff;color:#1d2126;cursor:crosshair;font-variant-numeric:tabular-nums;transition:background .12s}
+.cell.wrong{box-shadow:inset 0 0 0 3px var(--bad)}
+.grid.nonum .cell{color:transparent!important}
+.status{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;max-width:620px;margin:12px auto 0}
+.meter{flex:1;min-width:160px;height:12px;border:2px solid var(--line);border-radius:8px;overflow:hidden;background:var(--bg)}
+.meter b{display:block;height:100%;width:0;background:var(--ok);transition:width .2s}
+.msg{font-family:var(--display);font-size:17px;min-height:1.4em}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.side h2{font-family:var(--display);font-weight:400;font-size:20px;margin:0;text-align:center}
+.palette{display:grid;grid-template-columns:1fr;gap:5px}
+@media (max-width:760px){.palette{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
+.sw{display:flex;align-items:center;gap:10px;padding:5px 8px;border:2px solid transparent;border-radius:10px;background:none;color:var(--ink);font-family:var(--body);font-size:14px;cursor:pointer;text-align:left}
+.sw:hover{border-color:var(--muted)}
+.sw[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.sw span.c{width:30px;height:24px;border:2px solid var(--line);flex:none}
+.sw .n{font-family:var(--display);font-size:16px;width:22px}
+.sw small{color:var(--muted);font-variant-numeric:tabular-nums}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.btn{font-family:var(--display);font-size:16px;padding:10px;border:2px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--bg)}
+.btn.eraser{width:100%}
+.btn.eraser[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+.board.erasing .grid .cell{cursor:cell}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn:focus-visible,.tab:focus-visible,.sw:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.hint{font-size:13px;color:var(--muted);line-height:1.5;margin:0}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+
+<div class="win">
+  <div class="titlebar"><h1>오른쪽 색상 코드를 참고하여 픽셀 컬러 이미지를 완성해 보자</h1><div class="dots"><i></i><i></i><i></i></div></div>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="main">
+    <div class="board">
+      <div class="grid" id="grid"></div>
+      <div class="status"><div class="meter"><b id="bar"></b></div><div class="msg" id="msg"></div></div>
+    </div>
+    <div class="side">
+      <h2>[색상 코드]</h2>
+      <div class="palette" id="palette"></div>
+      <button class="btn eraser" id="eraser" aria-pressed="false">🧽 지우개 (X)</button>
+      <div class="btns">
+        <button class="btn primary" id="check">정답 확인</button>
+        <button class="btn" id="show">자동 완성</button>
+        <button class="btn" id="nums">숫자 숨기기</button>
+        <button class="btn" id="reset">처음부터</button>
+      </div>
+      <p class="hint">색을 고른 뒤 칸을 클릭하거나 드래그해서 칠해요. 지우개로 잘못 칠한 칸을 흰색으로 되돌릴 수 있어요. 키보드 0~9, Q(10), W(11), E(12), X(지우개)로도 고를 수 있어요.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS=[[255,255,255],[0,0,0],[153,56,0],[255,193,158],[255,0,127],[95,0,255],[0,84,255],[0,216,255],[29,219,22],[171,242,0],[255,228,0],[255,187,0],[255,0,0]];
+const P=[
+ {name:"도안 1",g:[
+ [0,4,4,4,0,0,0,0,0,0,4,4,4,0],
+ [0,4,4,4,4,4,0,0,4,4,4,4,4,0],
+ [0,4,4,4,4,4,4,4,4,4,4,4,4,0],
+ [0,4,4,4,4,0,0,0,0,4,4,4,4,0],
+ [0,4,4,0,0,0,0,0,0,0,0,4,4,0],
+ [0,0,0,0,6,6,0,0,6,6,0,0,0,0],
+ [0,0,0,6,6,6,0,0,6,6,6,0,0,0],
+ [0,0,0,7,7,1,0,0,1,7,7,0,0,0],
+ [0,0,0,7,7,1,10,10,1,7,7,0,0,0],
+ [0,10,10,7,7,1,10,10,1,7,7,10,10,0],
+ [0,0,10,10,10,10,10,10,10,10,10,10,0,0],
+ [0,0,0,10,10,11,11,11,11,10,10,0,0,0],
+ [0,0,0,0,10,10,10,10,10,10,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+ {name:"도안 2",g:[
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+ [0,2,2,2,2,2,2,2,2,2,2,2,2,0],
+ [0,2,2,2,2,2,2,2,2,2,2,2,2,0],
+ [0,2,2,2,2,2,2,2,2,2,2,2,2,0],
+ [0,2,2,3,3,3,3,3,3,3,3,2,2,0],
+ [0,2,3,3,3,3,3,3,3,3,3,3,2,0],
+ [0,3,0,6,6,6,3,3,6,6,6,0,3,0],
+ [0,3,0,6,6,6,3,3,6,6,6,0,3,0],
+ [0,3,3,3,3,3,11,11,3,3,3,3,3,0],
+ [0,3,3,3,3,3,11,11,3,3,3,3,3,0],
+ [0,3,3,2,2,3,3,3,3,2,2,3,3,0],
+ [0,3,3,2,2,2,2,2,2,2,2,3,3,0],
+ [0,3,3,2,2,2,2,2,2,2,2,3,3,0],
+ [0,0,0,0,0,0,0,0,0,0,0,0,0,0]]},
+ {name:"도안 3",g:[
+ [0,0,0,0,10,10,10,10,10,10,0,0,0,0],
+ [0,0,0,10,1,1,1,1,1,1,10,0,0,0],
+ [0,0,10,1,1,1,1,1,1,1,1,10,0,0],
+ [0,10,1,1,1,0,0,0,0,1,1,1,10,0],
+ [0,10,1,0,0,0,0,0,0,0,0,1,10,0],
+ [12,10,1,0,0,0,0,0,0,0,0,1,10,12],
+ [12,10,1,0,1,0,0,0,0,1,0,1,10,12],
+ [0,10,1,0,0,0,10,10,0,0,0,1,10,0],
+ [0,1,1,4,10,10,10,10,10,10,4,1,1,0],
+ [0,1,1,0,0,10,1,1,10,0,0,1,1,0],
+ [0,12,1,1,0,0,10,10,0,0,1,1,12,0],
+ [12,12,12,1,1,0,0,0,0,1,1,12,12,12],
+ [12,12,12,12,1,1,1,1,1,1,12,12,12,12],
+ [12,12,12,12,12,12,12,12,12,12,12,12,12,12]]}
+];
+const rgb=c=>`rgb(${c.join(",")})`;
+const textOn=c=>(0.299*c[0]+0.587*c[1]+0.114*c[2])>140?"#1d2126":"#ffffff";
+
+let cur=0, sel=1, showNums=true, painting=false, timer=null;
+const state=P.map(()=>Array.from({length:14},()=>Array(14).fill(0)));
+const $=id=>document.getElementById(id);
+const grid=$("grid"), cells=[];
+
+// tabs
+P.forEach((p,i)=>{const b=document.createElement("button");b.className="tab";b.id="tab"+i;b.role="tab";b.textContent=p.name;b.onclick=()=>load(i);$("tabs").append(b)});
+// palette
+COLORS.forEach((c,i)=>{const b=document.createElement("button");b.className="sw";b.id="sw"+i;
+ b.innerHTML=`<span class="c" style="background:${rgb(c)}"></span><span class="n">${i}</span><small>RGB(${c.join(",")})</small>`;
+ b.onclick=()=>pick(i);$("palette").append(b)});
+// grid
+for(let r=0;r<14;r++)for(let c=0;c<14;c++){const d=document.createElement("div");d.className="cell";d.dataset.r=r;d.dataset.c=c;grid.append(d);cells.push(d)}
+
+let lastColor=1;
+function pick(i){sel=i;if(i!==0)lastColor=i;setEraser(false);document.querySelectorAll(".sw").forEach((b,k)=>b.setAttribute("aria-pressed",k===i))}
+function setEraser(on){$("eraser").setAttribute("aria-pressed",on);document.querySelector(".board").classList.toggle("erasing",on);
+ if(on){sel=0;document.querySelectorAll(".sw").forEach(b=>b.setAttribute("aria-pressed",false))}}
+$("eraser").onclick=()=>{if($("eraser").getAttribute("aria-pressed")==="true")pick(lastColor);else setEraser(true)};
+function paintCell(d,v){const c=COLORS[v];d.style.background=rgb(c);d.style.color=textOn(c)}
+function render(){const g=P[cur].g,s=state[cur];cells.forEach(d=>{const r=+d.dataset.r,c=+d.dataset.c;d.textContent=g[r][c];paintCell(d,s[r][c]);d.classList.remove("wrong")});progress()}
+function progress(){const g=P[cur].g,s=state[cur];let t=0,ok=0;
+ for(let r=0;r<14;r++)for(let c=0;c<14;c++)if(g[r][c]!==0){t++;if(s[r][c]===g[r][c])ok++}
+ const wrongWhite=countWrong();$("bar").style.width=(ok/t*100)+"%";
+ $("msg").textContent=(ok===t&&wrongWhite===0)?"완성! 멋진 그림이 나타났어요 🎉":`${ok} / ${t} 칸 완료`;return ok===t}
+function countWrong(){const g=P[cur].g,s=state[cur];let w=0;for(let r=0;r<14;r++)for(let c=0;c<14;c++)if(s[r][c]!==g[r][c])w++;return w}
+function load(i){stop();cur=i;document.querySelectorAll(".tab").forEach((b,k)=>b.setAttribute("aria-selected",k===i));render()}
+function stop(){if(timer){clearInterval(timer);timer=null}}
+
+function at(e){const el=document.elementFromPoint(e.clientX,e.clientY);return el&&el.classList.contains("cell")?el:null}
+function apply(d){if(!d)return;const r=+d.dataset.r,c=+d.dataset.c;if(state[cur][r][c]===sel)return;state[cur][r][c]=sel;paintCell(d,sel);d.classList.remove("wrong");progress()}
+grid.addEventListener("pointerdown",e=>{stop();painting=true;grid.setPointerCapture(e.pointerId);apply(at(e))});
+grid.addEventListener("pointermove",e=>{if(painting)apply(at(e))});
+addEventListener("pointerup",()=>painting=false);addEventListener("pointercancel",()=>painting=false);
+
+$("check").onclick=()=>{const g=P[cur].g,s=state[cur];let w=0;
+ cells.forEach(d=>{const r=+d.dataset.r,c=+d.dataset.c,bad=s[r][c]!==g[r][c];d.classList.toggle("wrong",bad);if(bad)w++});
+ $("msg").textContent=w?`틀린 칸이 ${w}개 있어요. 빨간 테두리를 확인해 보세요.`:"모두 정답이에요! 완성 🎉"};
+$("show").onclick=()=>{stop();const g=P[cur].g;let k=0;
+ timer=setInterval(()=>{if(k>=196){stop();progress();return}const r=Math.floor(k/14),c=k%14;state[cur][r][c]=g[r][c];paintCell(cells[k],g[r][c]);cells[k].classList.remove("wrong");k++;if(k%14===0)progress()},matchMedia("(prefers-reduced-motion: reduce)").matches?0:18)};
+$("reset").onclick=()=>{stop();state[cur]=Array.from({length:14},()=>Array(14).fill(0));render()};
+$("nums").onclick=()=>{showNums=!showNums;grid.classList.toggle("nonum",!showNums);$("nums").textContent=showNums?"숫자 숨기기":"숫자 보이기"};
+addEventListener("keydown",e=>{const m={q:10,w:11,e:12};const k=e.key.toLowerCase();
+ if(k==="x")$("eraser").click();else if(/^[0-9]$/.test(k))pick(+k);else if(k in m)pick(m[k])});
+
+pick(1);load(0);
+</script>
+</body></html>
