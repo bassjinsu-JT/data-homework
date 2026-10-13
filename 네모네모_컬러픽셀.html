@@ -1,4 +1,4 @@
-<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>네모네모 컬러 픽셀</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=Gowun+Dodum&display=swap">
 <style>
@@ -56,7 +56,6 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);padding-inlin
 .hint{font-size:13px;color:var(--muted);line-height:1.5;margin:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
-</head><body>
 
 <div class="win">
   <div class="titlebar"><h1>오른쪽 색상 코드를 참고하여 픽셀 컬러 이미지를 완성해 보자</h1><div class="dots"><i></i><i></i><i></i></div></div>
@@ -72,7 +71,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);padding-inlin
       <button class="btn eraser" id="eraser" aria-pressed="false">🧽 지우개 (X)</button>
       <div class="btns">
         <button class="btn primary" id="check">정답 확인</button>
-        <button class="btn" id="show">자동 완성</button>
+        <button class="btn" id="show hidden">자동 완성</button>
         <button class="btn" id="nums">숫자 숨기기</button>
         <button class="btn" id="reset">처음부터</button>
       </div>
@@ -170,7 +169,9 @@ addEventListener("pointerup",()=>painting=false);addEventListener("pointercancel
 
 $("check").onclick=()=>{const g=P[cur].g,s=state[cur];let w=0;
  cells.forEach(d=>{const r=+d.dataset.r,c=+d.dataset.c,bad=s[r][c]!==g[r][c];d.classList.toggle("wrong",bad);if(bad)w++});
- $("msg").textContent=w?`틀린 칸이 ${w}개 있어요. 빨간 테두리를 확인해 보세요.`:"모두 정답이에요! 완성 🎉"};
+ if(w){$("msg").textContent=`틀린 칸이 ${w}개 있어요. 빨간 테두리를 확인해 보세요.`}
+ else if(cur<P.length-1){$("msg").textContent="모두 정답이에요! 잠시 뒤 다음 도안으로 넘어가요 🎉";setTimeout(()=>load(cur+1),1500)}
+ else{$("msg").textContent="모든 도안을 완성했어요! 🎉"}};
 $("show").onclick=()=>{stop();const g=P[cur].g;let k=0;
  timer=setInterval(()=>{if(k>=196){stop();progress();return}const r=Math.floor(k/14),c=k%14;state[cur][r][c]=g[r][c];paintCell(cells[k],g[r][c]);cells[k].classList.remove("wrong");k++;if(k%14===0)progress()},matchMedia("(prefers-reduced-motion: reduce)").matches?0:18)};
 $("reset").onclick=()=>{stop();state[cur]=Array.from({length:14},()=>Array(14).fill(0));render()};
@@ -180,4 +181,5 @@ addEventListener("keydown",e=>{const m={q:10,w:11,e:12};const k=e.key.toLowerCas
 
 pick(1);load(0);
 </script>
+
 </body></html>
