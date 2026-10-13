@@ -511,60 +511,24 @@ function renderGrid(){
         btn.appendChild(lab);
       }
       btn.setAttribute('aria-label', `${r+1}행 ${c+1}열, 숫자 ${labelVal !== null ? labelVal : ''}`);
-      btn.dataset.r = r; btn.dataset.c = c;
-      btn.addEventListener('click', (e) => { if(e.detail === 0) handleCellClick(r, c, btn); });
+      btn.addEventListener('click', () => handleCellClick(r, c, btn));
       grid.appendChild(btn);
     }
   }
 }
 
 function handleCellClick(r, c, btn){
-  const v = state.category === 'binary' ? (state.grid[r][c] === 1 ? 0 : 1) : state.activeColor;
-  paintCell(r, c, btn, v);
-}
-
-function paintCell(r, c, btn, v){
-  if(state.grid[r][c] === v && !state.status[r][c]) return;
-  state.grid[r][c] = v;
+  if(state.category === 'binary'){
+    state.grid[r][c] = state.grid[r][c] === 1 ? 0 : 1;
+  } else {
+    state.grid[r][c] = state.activeColor;
+  }
   state.status[r][c] = '';
   btn.classList.remove('status-correct', 'status-wrong');
-  btn.className = 'cell ' + cellClassFor(v);
+  btn.className = 'cell ' + cellClassFor(state.grid[r][c]);
+  btn.classList.add('flash');
+  setTimeout(() => btn.classList.remove('flash'), 500);
 }
-
-// -- 드래그로 연속 칠하기 --
-function enableDragPaint(gridEl, getValue, apply){
-  let dragging = false, value = null, last = null;
-  gridEl.style.touchAction = 'none';
-  gridEl.addEventListener('pointerdown', (e) => {
-    const cell = e.target.closest('.cell');
-    if(!cell || !gridEl.contains(cell)) return;
-    if(e.pointerType === 'mouse' && e.button !== 0) return;
-    e.preventDefault();
-    dragging = true; last = cell;
-    value = getValue(cell);
-    apply(cell, value);
-  });
-  gridEl.addEventListener('pointermove', (e) => {
-    if(!dragging) return;
-    const t = document.elementFromPoint(e.clientX, e.clientY);
-    const cell = t && t.closest ? t.closest('.cell') : null;
-    if(!cell || !gridEl.contains(cell) || cell === last) return;
-    last = cell;
-    apply(cell, value);
-  });
-  const end = () => { dragging = false; last = null; };
-  window.addEventListener('pointerup', end);
-  window.addEventListener('pointercancel', end);
-}
-
-enableDragPaint(
-  el('mainGrid'),
-  (cell) => {
-    const r = Number(cell.dataset.r), c = Number(cell.dataset.c);
-    return state.category === 'binary' ? (state.grid[r][c] === 1 ? 0 : 1) : state.activeColor;
-  },
-  (cell, v) => paintCell(Number(cell.dataset.r), Number(cell.dataset.c), cell, v)
-);
 
 function renderPreview(){
   if(state.activityMode !== 'solve') return;
