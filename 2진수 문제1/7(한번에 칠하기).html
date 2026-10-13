@@ -1,0 +1,595 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>16진수 픽셀 그림 조합하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#EFEAE0;
+    --panel:#F8F5EE;
+    --ink:#242321;
+    --line:#CFC7B0;
+    --accent:#C1443C;
+    --good:#3E7C59;
+    --bad:#C1443C;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background-color:var(--bg);
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:22px 22px;
+    background-position:-1px -1px;
+    color:var(--ink);
+    font-family:'IBM Plex Sans KR', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{ max-width:1080px; margin:0 auto; padding:28px 20px 60px; }
+  header h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700;
+    font-size:clamp(22px, 4vw, 32px);
+    letter-spacing:-0.01em;
+    margin:0 0 6px;
+  }
+  header h1 .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:0.4em;
+    font-weight:500;
+    background:var(--ink);
+    color:var(--bg);
+    padding:3px 8px;
+    border-radius:4px;
+    vertical-align:middle;
+    margin-left:10px;
+  }
+  header p{ margin:0 0 16px; color:#5a5648; font-size:14.5px; line-height:1.6; max-width:700px; }
+
+  .panel{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px;
+    margin-bottom:20px;
+  }
+  .panel h2{ font-size:14px; font-weight:600; margin:0 0 10px; padding-bottom:8px; border-bottom:1px solid var(--line); }
+  .steps{ margin:0; padding-left:20px; font-size:13px; line-height:1.85; color:#3a382f; }
+
+  .legend-table{ display:flex; flex-wrap:wrap; gap:14px; margin-top:10px; }
+  .legend-item{ display:flex; align-items:center; gap:6px; font-family:'IBM Plex Mono', monospace; font-size:12px; }
+  .legend-item .hexchar{ font-weight:700; width:16px; text-align:center; }
+  .legend-item .mini{ display:grid; grid-template-columns:repeat(4,10px); gap:1px; border:1px solid var(--ink); padding:1px; background:#fff; }
+  .legend-item .mini div{ width:10px; height:10px; background:#fff; }
+  .legend-item .mini div.on{ background:var(--ink); }
+
+  .example-toggle{
+    font-size:12.5px; background:none; border:none; color:var(--accent); text-decoration:underline; cursor:pointer; padding:0; margin-top:10px; font-family:inherit;
+  }
+  .example-box{ display:none; margin-top:12px; }
+  .example-box.show{ display:block; }
+  .example-hex-table{ border-collapse:collapse; font-family:'IBM Plex Mono', monospace; font-size:12px; margin-bottom:12px; }
+  .example-hex-table th, .example-hex-table td{ border:1px solid var(--line); padding:3px 8px; text-align:center; }
+  .example-assembled{ display:inline-grid; grid-template-columns:repeat(12,10px); gap:0; border:2px solid var(--ink); background:#fff; }
+  .example-assembled div{ width:10px; height:10px; background:#fff; }
+  .example-assembled div.on{ background:#F0A868; }
+
+  .puzzle-block{
+    background:var(--panel);
+    border:2px solid var(--ink);
+    border-radius:6px;
+    padding:16px 18px 20px;
+    margin-bottom:22px;
+  }
+  .puzzle-title{ font-size:16px; font-weight:700; margin-bottom:12px; }
+
+  .hex-table{ border-collapse:collapse; font-family:'IBM Plex Mono', monospace; font-size:13px; margin-bottom:16px; }
+  .hex-table th, .hex-table td{ border:1px solid var(--ink); padding:4px 10px; text-align:center; background:#fff; }
+  .hex-table th{ background:var(--panel); font-weight:700; }
+
+  .panels-grid{ display:grid; grid-template-columns:repeat(auto-fit, minmax(150px,1fr)); gap:14px; margin-bottom:18px; }
+  .decode-panel{ background:#fff; border:2px solid var(--ink); border-radius:5px; padding:10px; }
+  .decode-panel-label{ font-weight:700; font-size:13px; margin-bottom:8px; text-align:center; }
+  .decode-body{ display:flex; gap:6px; align-items:flex-start; justify-content:center; }
+  .hex-col{ display:flex; flex-direction:column; gap:1px; }
+  .hex-col div{ width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono', monospace; font-size:12px; color:#8b8570; }
+  .decode-grid{ display:grid; grid-template-columns:repeat(4,20px); gap:1px; border:2px solid var(--ink); background:var(--line); }
+  .decode-grid .cell{ width:20px; height:20px; background:#fff; border:none; padding:0; cursor:pointer; }
+  .decode-grid .cell.on{ background:var(--ink); }
+  .decode-grid .cell.status-correct{ outline:2px solid var(--good); outline-offset:-2px; }
+  .decode-grid .cell.status-wrong{ outline:2px solid var(--bad); outline-offset:-2px; }
+  .decode-panel .btnrow{ display:flex; gap:6px; margin-top:8px; justify-content:center; }
+  .mini-btn{
+    font-size:11px; padding:4px 8px; border:1.5px solid var(--ink); border-radius:4px; background:#fff; cursor:pointer; font-family:inherit; font-weight:600;
+  }
+  .mini-btn:hover{ background:var(--ink); color:#fff; }
+  .mini-feedback{ font-size:11px; text-align:center; margin-top:6px; min-height:14px; font-weight:600; }
+  .mini-feedback.good{ color:var(--good); }
+  .mini-feedback.bad{ color:var(--bad); }
+
+  .assembly-note{ font-size:13px; color:#5a5648; margin-bottom:12px; line-height:1.6; }
+  .assembly-wrap{ display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+  .assembly-grid{
+    display:grid; grid-template-columns:repeat(3, auto); grid-template-rows:repeat(2, auto);
+    border:3px solid var(--ink); background:var(--line); gap:1px;
+  }
+  .slot{ background:#fff; padding:6px; display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .slot select{ font-family:inherit; font-size:12px; padding:3px 4px; border:1.5px solid var(--ink); border-radius:4px; background:#fff; }
+  .slot .slotgrid{ display:grid; grid-template-columns:repeat(4,14px); gap:0; border:1px solid var(--ink); background:#fff; }
+  .slot .slotgrid div{ width:14px; height:14px; background:#fff; }
+  .slot .slotgrid div.on{ background:var(--ink); }
+
+  .combined-wrap{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .combined-wrap .combined-label{ font-size:12.5px; font-weight:700; color:#3a382f; }
+  .combined-grid{
+    display:grid; grid-template-columns:repeat(12,13px); gap:0;
+    border:3px solid var(--ink); background:#fff;
+  }
+  .combined-grid div{ width:13px; height:13px; background:#fff; }
+  .combined-grid div.on{ background:var(--ink); }
+  .combined-status{ font-size:12px; color:#8b8570; text-align:center; max-width:170px; line-height:1.5; }
+
+  .btn{
+    padding:9px 14px; font-family:inherit; font-weight:600; font-size:13px;
+    border:2px solid var(--ink); border-radius:5px; background:#fff; color:var(--ink); cursor:pointer;
+  }
+  .btn:hover{ background:var(--ink); color:var(--bg); }
+  .assembly-controls{ display:flex; flex-direction:column; gap:10px; }
+  .warn{ font-size:12px; color:var(--bad); min-height:16px; font-weight:600; }
+
+  @media (prefers-reduced-motion:no-preference){
+    .cell.flash{ animation:flashcell .3s ease; }
+    @keyframes flashcell{ 0%{ transform:scale(1);} 40%{ transform:scale(0.8);} 100%{ transform:scale(1);} }
+  }
+  footer{ text-align:center; font-size:12px; color:#8b8570; margin-top:26px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>16진수 픽셀 그림 조합하기<span class="tag">모둠 게임</span></h1>
+    <p>가~바 6장의 종이에 적힌 16진수를 각각 그림으로 바꾼 다음, 6개의 조각을 3×2로 배치해서 숨어 있는 큰 그림을 찾는 활동이에요. 실제로는 여러 명이 하는 게임이라, 정답 배치는 따로 알려주지 않아요 — 이리저리 옮겨보면서 직접 그림을 찾아보세요!</p>
+  </header>
+
+  <div class="panel">
+    <h2>16진수 → 4칸 무늬 (참고표)</h2>
+    <div class="legend-table" id="legendTable"></div>
+    <button class="example-toggle" id="exampleToggle">완성된 예시(하트) 보기</button>
+    <div class="example-box" id="exampleBox"></div>
+  </div>
+
+  <div id="puzzles"></div>
+
+  <footer>6개의 선택 칸에 서로 다른 조각(가~바)을 하나씩 골라 넣어서 큰 그림을 맞춰보세요.</footer>
+</div>
+
+<script>
+const legend = {
+  '0':[0,0,0,0],'1':[0,0,0,1],'2':[0,0,1,0],'3':[0,0,1,1],
+  '4':[0,1,0,0],'5':[0,1,0,1],'6':[0,1,1,0],'7':[0,1,1,1],
+  '8':[1,0,0,0],'9':[1,0,0,1],'A':[1,0,1,0],'B':[1,0,1,1],
+  'C':[1,1,0,0],'D':[1,1,0,1],'E':[1,1,1,0],'F':[1,1,1,1]
+};
+const letters = ['가','나','다','라','마','바'];
+
+const puzzles = [
+  { name:'문제 1', hex:{
+    '가':['0','1','2','4','4','5','7','4'],
+    '나':['1','F','1','1','9','2','4','8'],
+    '다':['0','F','0','5','A','5','2','8'],
+    '라':['8','4','2','1','9','5','F','1'],
+    '마':['8','2','2','5','A','5','F','0'],
+    '바':['4','7','4','4','4','2','1','0']
+  }},
+  { name:'문제 2', hex:{
+    '가':['F','8','D','D','D','7','0','0'],
+    '나':['0','0','0','0','2','2','3','0'],
+    '다':['3','6','8','0','1','3','2','2'],
+    '라':['5','7','2','2','7','7','F','F'],
+    '마':['E','B','9','8','C','6','2','2'],
+    '바':['0','0','0','0','2','2','E','8']
+  }},
+  { name:'문제 3', hex:{
+    '가':['0','0','0','0','0','0','1','F'],
+    '나':['F','B','B','C','F','F','F','F'],
+    '다':['F','B','B','7','F','E','E','C'],
+    '라':['E','F','F','7','F','E','C','D'],
+    '마':['3','7','7','7','7','3','1','1'],
+    '바':['1','3','3','F','7','7','3','1']
+  }}
+];
+
+const exampleHex = {
+  '가':['0','0','9','9','F','F','F','F'],
+  '나':['F','E','E','C','8','0','0','0'],
+  '다':['F','7','7','3','1','0','0','0'],
+  '라':['0','C','E','E','F','F','F','F'],
+  '마':['0','3','7','7','F','F','F','F'],
+  '바':['F','F','F','F','F','F','6','6']
+};
+const exampleOrder = ['마','가','라','다','바','나'];
+
+const el = (id) => document.getElementById(id);
+
+function decodeCol(hexArr){
+  return hexArr.map(h => legend[h]);
+}
+
+// -- 참고표 --
+function buildLegendTable(){
+  const container = el('legendTable');
+  Object.keys(legend).forEach(h => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    const label = document.createElement('span');
+    label.className = 'hexchar';
+    label.textContent = h;
+    const mini = document.createElement('div');
+    mini.className = 'mini';
+    legend[h].forEach(v => {
+      const d = document.createElement('div');
+      if(v) d.className = 'on';
+      mini.appendChild(d);
+    });
+    item.appendChild(label);
+    item.appendChild(mini);
+    container.appendChild(item);
+  });
+}
+buildLegendTable();
+
+// -- 예시(하트) --
+function buildExample(){
+  const box = el('exampleBox');
+  const table = document.createElement('table');
+  table.className = 'example-hex-table';
+  const headRow = document.createElement('tr');
+  letters.forEach(l => { const th = document.createElement('th'); th.textContent = l; headRow.appendChild(th); });
+  table.appendChild(headRow);
+  for(let r=0;r<8;r++){
+    const tr = document.createElement('tr');
+    letters.forEach(l => { const td = document.createElement('td'); td.textContent = exampleHex[l][r]; tr.appendChild(td); });
+    table.appendChild(tr);
+  }
+  box.appendChild(table);
+
+  const panels = {};
+  letters.forEach(l => panels[l] = decodeCol(exampleHex[l]));
+  const top = exampleOrder.slice(0,3).map(l => panels[l]);
+  const bot = exampleOrder.slice(3,6).map(l => panels[l]);
+  const grid = document.createElement('div');
+  grid.className = 'example-assembled';
+  for(let r=0;r<8;r++){
+    for(let p=0;p<3;p++){
+      for(let c=0;c<4;c++){
+        const d = document.createElement('div');
+        if(top[p][r][c]) d.className = 'on';
+        grid.appendChild(d);
+      }
+    }
+  }
+  for(let r=0;r<8;r++){
+    for(let p=0;p<3;p++){
+      for(let c=0;c<4;c++){
+        const d = document.createElement('div');
+        if(bot[p][r][c]) d.className = 'on';
+        grid.appendChild(d);
+      }
+    }
+  }
+  grid.style.gridTemplateColumns = 'repeat(12,10px)';
+  box.appendChild(document.createElement('br'));
+  box.appendChild(grid);
+}
+buildExample();
+el('exampleToggle').addEventListener('click', () => {
+  el('exampleBox').classList.toggle('show');
+});
+
+// -- 드래그로 연속 칠하기 --
+function enableDragPaint(gridEl, getValue, apply){
+  let dragging = false, value = null, last = null;
+  gridEl.style.touchAction = 'none';
+  gridEl.addEventListener('pointerdown', (e) => {
+    const cell = e.target.closest('.cell');
+    if(!cell || !gridEl.contains(cell)) return;
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    dragging = true; last = cell;
+    value = getValue(cell);
+    apply(cell, value);
+  });
+  gridEl.addEventListener('pointermove', (e) => {
+    if(!dragging) return;
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    const cell = t && t.closest ? t.closest('.cell') : null;
+    if(!cell || !gridEl.contains(cell) || cell === last) return;
+    last = cell;
+    apply(cell, value);
+  });
+  const end = () => { dragging = false; last = null; };
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+}
+
+// -- 실제 문제들 --
+function buildPuzzle(puzzle, index){
+  const solution = {};
+  letters.forEach(l => solution[l] = decodeCol(puzzle.hex[l]));
+  const studentGrids = {};
+  letters.forEach(l => studentGrids[l] = Array.from({length:8}, () => [0,0,0,0]));
+
+  const block = document.createElement('div');
+  block.className = 'puzzle-block';
+
+  const title = document.createElement('div');
+  title.className = 'puzzle-title';
+  title.textContent = puzzle.name;
+  block.appendChild(title);
+
+  // hex table
+  const table = document.createElement('table');
+  table.className = 'hex-table';
+  const headRow = document.createElement('tr');
+  letters.forEach(l => { const th = document.createElement('th'); th.textContent = l; headRow.appendChild(th); });
+  table.appendChild(headRow);
+  for(let r=0;r<8;r++){
+    const tr = document.createElement('tr');
+    letters.forEach(l => { const td = document.createElement('td'); td.textContent = puzzle.hex[l][r]; tr.appendChild(td); });
+    table.appendChild(tr);
+  }
+  block.appendChild(table);
+
+  // decode panels
+  const panelsGrid = document.createElement('div');
+  panelsGrid.className = 'panels-grid';
+
+  const slotUpdaters = [];
+
+  letters.forEach(letter => {
+    const panelBox = document.createElement('div');
+    panelBox.className = 'decode-panel';
+
+    const label = document.createElement('div');
+    label.className = 'decode-panel-label';
+    label.textContent = letter;
+    panelBox.appendChild(label);
+
+    const body = document.createElement('div');
+    body.className = 'decode-body';
+
+    const hexCol = document.createElement('div');
+    hexCol.className = 'hex-col';
+    puzzle.hex[letter].forEach(h => {
+      const d = document.createElement('div');
+      d.textContent = h;
+      hexCol.appendChild(d);
+    });
+    body.appendChild(hexCol);
+
+    const gridEl = document.createElement('div');
+    gridEl.className = 'decode-grid';
+
+    function renderPanelGrid(statusGrid){
+      gridEl.innerHTML = '';
+      for(let r=0;r<8;r++){
+        for(let c=0;c<4;c++){
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          const v = studentGrids[letter][r][c];
+          const st = statusGrid ? statusGrid[r][c] : '';
+          btn.className = 'cell' + (v ? ' on' : '') + (st ? (' status-'+st) : '');
+          btn.dataset.r = r; btn.dataset.c = c;
+          btn.addEventListener('click', (e) => {
+            if(e.detail === 0) paintPanelCell(btn, studentGrids[letter][r][c] ? 0 : 1);
+          });
+          gridEl.appendChild(btn);
+        }
+      }
+    }
+    function paintPanelCell(btn, v){
+      const r = Number(btn.dataset.r), c = Number(btn.dataset.c);
+      if(studentGrids[letter][r][c] === v && !btn.classList.contains('status-correct') && !btn.classList.contains('status-wrong')) return;
+      studentGrids[letter][r][c] = v;
+      btn.className = 'cell' + (v ? ' on' : '');
+      feedback.textContent = '';
+      feedback.className = 'mini-feedback';
+      slotUpdaters.forEach(fn => fn());
+    }
+    enableDragPaint(
+      gridEl,
+      (cell) => (studentGrids[letter][Number(cell.dataset.r)][Number(cell.dataset.c)] ? 0 : 1),
+      (cell, v) => paintPanelCell(cell, v)
+    );
+    renderPanelGrid();
+    body.appendChild(gridEl);
+    panelBox.appendChild(body);
+
+    const btnRow = document.createElement('div');
+    btnRow.className = 'btnrow';
+    const checkBtn = document.createElement('button');
+    checkBtn.className = 'mini-btn';
+    checkBtn.textContent = '확인';
+    const clearBtn = document.createElement('button');
+    clearBtn.className = 'mini-btn';
+    clearBtn.textContent = '지우기';
+    btnRow.appendChild(checkBtn);
+    btnRow.appendChild(clearBtn);
+    panelBox.appendChild(btnRow);
+
+    const feedback = document.createElement('div');
+    feedback.className = 'mini-feedback';
+    panelBox.appendChild(feedback);
+
+    checkBtn.addEventListener('click', () => {
+      const status = Array.from({length:8}, () => ['','','','']);
+      let correct = 0;
+      for(let r=0;r<8;r++) for(let c=0;c<4;c++){
+        const ok = studentGrids[letter][r][c] === solution[letter][r][c];
+        status[r][c] = ok ? 'correct' : 'wrong';
+        if(ok) correct++;
+      }
+      renderPanelGrid(status);
+      if(correct === 32){
+        feedback.textContent = '완벽해요!';
+        feedback.className = 'mini-feedback good';
+      } else {
+        feedback.textContent = `${32}칸 중 ${correct}칸 맞음`;
+        feedback.className = 'mini-feedback bad';
+      }
+    });
+    clearBtn.addEventListener('click', () => {
+      studentGrids[letter] = Array.from({length:8}, () => [0,0,0,0]);
+      renderPanelGrid();
+      feedback.textContent = '';
+      feedback.className = 'mini-feedback';
+      slotUpdaters.forEach(fn => fn());
+    });
+
+    panelsGrid.appendChild(panelBox);
+  });
+  block.appendChild(panelsGrid);
+
+  // assembly section
+  const assemblyNote = document.createElement('div');
+  assemblyNote.className = 'assembly-note';
+  assemblyNote.innerHTML = '위에서 그린 6개의 조각을 아래 6개의 칸에 골라 넣어보세요. 같은 조각을 두 번 쓸 수는 없어요. 이리저리 배치를 바꿔가며 어떤 그림이 나타나는지 찾아보세요.';
+  block.appendChild(assemblyNote);
+
+  const assemblyWrap = document.createElement('div');
+  assemblyWrap.className = 'assembly-wrap';
+
+  const assemblyGrid = document.createElement('div');
+  assemblyGrid.className = 'assembly-grid';
+
+  const selects = [];
+  for(let i=0;i<6;i++){
+    const slot = document.createElement('div');
+    slot.className = 'slot';
+    const select = document.createElement('select');
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '선택';
+    select.appendChild(placeholder);
+    letters.forEach(l => {
+      const opt = document.createElement('option');
+      opt.value = l;
+      opt.textContent = l;
+      select.appendChild(opt);
+    });
+    const slotGrid = document.createElement('div');
+    slotGrid.className = 'slotgrid';
+    slotGrid.style.gridTemplateColumns = 'repeat(4,14px)';
+
+    function updateSlotGrid(){
+      slotGrid.innerHTML = '';
+      const chosen = select.value;
+      for(let r=0;r<8;r++){
+        for(let c=0;c<4;c++){
+          const d = document.createElement('div');
+          if(chosen && studentGrids[chosen][r][c]) d.className = 'on';
+          slotGrid.appendChild(d);
+        }
+      }
+    }
+    select.addEventListener('change', () => {
+      updateSlotGrid();
+      validateUnique();
+      renderCombinedPicture();
+    });
+    slotUpdaters.push(updateSlotGrid);
+    updateSlotGrid();
+
+    slot.appendChild(select);
+    slot.appendChild(slotGrid);
+    assemblyGrid.appendChild(slot);
+    selects.push(select);
+  }
+  assemblyWrap.appendChild(assemblyGrid);
+
+  // combined whole-picture view
+  const combinedWrap = document.createElement('div');
+  combinedWrap.className = 'combined-wrap';
+  const combinedLabel = document.createElement('div');
+  combinedLabel.className = 'combined-label';
+  combinedLabel.textContent = '합쳐진 큰 그림';
+  const combinedGrid = document.createElement('div');
+  combinedGrid.className = 'combined-grid';
+  const combinedStatus = document.createElement('div');
+  combinedStatus.className = 'combined-status';
+  combinedStatus.textContent = '6개 자리를 모두 채우면 큰 그림이 이어져서 나타나요.';
+  combinedWrap.appendChild(combinedLabel);
+  combinedWrap.appendChild(combinedGrid);
+  combinedWrap.appendChild(combinedStatus);
+  assemblyWrap.appendChild(combinedWrap);
+
+  function renderCombinedPicture(){
+    combinedGrid.innerHTML = '';
+    const chosen = selects.map(s => s.value);
+    const getPanel = (l) => l ? studentGrids[l] : Array.from({length:8}, () => [0,0,0,0]);
+    const p = chosen.map(getPanel);
+    const top = p[0].map((row,i) => [...row, ...p[1][i], ...p[2][i]]);
+    const bot = p[3].map((row,i) => [...row, ...p[4][i], ...p[5][i]]);
+    const big = [...top, ...bot];
+    big.forEach(row => row.forEach(v => {
+      const d = document.createElement('div');
+      if(v) d.className = 'on';
+      combinedGrid.appendChild(d);
+    }));
+    const filledCount = chosen.filter(v => v).length;
+    combinedStatus.textContent = filledCount === 6
+      ? '배치를 바꿔가며 그림이 완성되어 보이는 자리를 찾아보세요.'
+      : `${6-filledCount}자리가 비어 있어요. 모두 채우면 큰 그림이 이어져요.`;
+  }
+  slotUpdaters.push(renderCombinedPicture);
+  renderCombinedPicture();
+
+  const controls = document.createElement('div');
+  controls.className = 'assembly-controls';
+  const shuffleBtn = document.createElement('button');
+  shuffleBtn.className = 'btn';
+  shuffleBtn.textContent = '무작위로 섞기';
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'btn';
+  resetBtn.textContent = '선택 초기화';
+  const warn = document.createElement('div');
+  warn.className = 'warn';
+
+  function validateUnique(){
+    const vals = selects.map(s => s.value).filter(v => v);
+    const dup = vals.length !== new Set(vals).size;
+    warn.textContent = dup ? '같은 조각을 두 번 이상 선택했어요. 서로 다른 조각을 골라주세요.' : '';
+  }
+
+  shuffleBtn.addEventListener('click', () => {
+    const shuffled = letters.slice().sort(() => Math.random()-0.5);
+    selects.forEach((s,i) => { s.value = shuffled[i]; });
+    slotUpdaters.forEach(fn => fn());
+    validateUnique();
+  });
+  resetBtn.addEventListener('click', () => {
+    selects.forEach(s => { s.value = ''; });
+    slotUpdaters.forEach(fn => fn());
+    validateUnique();
+  });
+
+  controls.appendChild(shuffleBtn);
+  controls.appendChild(resetBtn);
+  controls.appendChild(warn);
+  assemblyWrap.appendChild(controls);
+
+  block.appendChild(assemblyWrap);
+
+  return block;
+}
+
+const container = el('puzzles');
+puzzles.forEach((p,i) => container.appendChild(buildPuzzle(p,i)));
+</script>
+</body>
+</html>
