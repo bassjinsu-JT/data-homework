@@ -167,6 +167,31 @@ const problems = [
 
 let showHints = false;
 
+function enableDragPaint(gridEl, getValue, apply){
+  let dragging = false, value = null, last = null;
+  gridEl.style.touchAction = 'none';
+  gridEl.addEventListener('pointerdown', (e) => {
+    const cell = e.target.closest('.cell');
+    if(!cell || !gridEl.contains(cell)) return;
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    dragging = true; last = cell;
+    value = getValue(cell);
+    apply(cell, value);
+  });
+  gridEl.addEventListener('pointermove', (e) => {
+    if(!dragging) return;
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    const cell = t && t.closest ? t.closest('.cell') : null;
+    if(!cell || !gridEl.contains(cell) || cell === last) return;
+    last = cell;
+    apply(cell, value);
+  });
+  const end = () => { dragging = false; last = null; };
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+}
+
 function sumOf(arr){
   let s = 0;
   for(let r=0;r<3;r++) for(let c=0;c<3;c++) if(arr[r][c]) s += VALUES[r][c];
@@ -285,18 +310,27 @@ function buildProblems(){
             lab.textContent = VALUES[r][c];
             cell.appendChild(lab);
           }
-          cell.addEventListener('click', () => {
-            userGrid[r][c] = userGrid[r][c] ? 0 : 1;
-            status[r][c] = '';
-            renderC();
-            const cells = gridC.children;
-            cells[r*3+c].classList.add('flash');
-            setTimeout(() => cells[r*3+c] && cells[r*3+c].classList.remove('flash'), 400);
+          cell.dataset.r = r; cell.dataset.c = c;
+          cell.addEventListener('click', (e) => {
+            if(e.detail === 0) paintC(cell, userGrid[r][c] ? 0 : 1);
           });
           gridC.appendChild(cell);
         }
       }
     }
+    function paintC(cell, v){
+      const r = Number(cell.dataset.r), c = Number(cell.dataset.c);
+      if(userGrid[r][c] === v && !status[r][c]) return;
+      userGrid[r][c] = v;
+      status[r][c] = '';
+      cell.classList.remove('status-correct', 'status-wrong');
+      cell.classList.toggle('on', !!v);
+    }
+    enableDragPaint(
+      gridC,
+      (cell) => (userGrid[Number(cell.dataset.r)][Number(cell.dataset.c)] ? 0 : 1),
+      (cell, v) => paintC(cell, v)
+    );
     renderC();
 
     const btnRow = document.createElement('div');

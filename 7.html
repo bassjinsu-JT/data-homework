@@ -124,6 +124,16 @@
   .slot .slotgrid div{ width:14px; height:14px; background:#fff; }
   .slot .slotgrid div.on{ background:var(--ink); }
 
+  .combined-wrap{ display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .combined-wrap .combined-label{ font-size:12.5px; font-weight:700; color:#3a382f; }
+  .combined-grid{
+    display:grid; grid-template-columns:repeat(12,13px); gap:0;
+    border:3px solid var(--ink); background:#fff;
+  }
+  .combined-grid div{ width:13px; height:13px; background:#fff; }
+  .combined-grid div.on{ background:var(--ink); }
+  .combined-status{ font-size:12px; color:#8b8570; text-align:center; max-width:170px; line-height:1.5; }
+
   .btn{
     padding:9px 14px; font-family:inherit; font-weight:600; font-size:13px;
     border:2px solid var(--ink); border-radius:5px; background:#fff; color:var(--ink); cursor:pointer;
@@ -281,6 +291,32 @@ el('exampleToggle').addEventListener('click', () => {
   el('exampleBox').classList.toggle('show');
 });
 
+// -- 드래그로 연속 칠하기 --
+function enableDragPaint(gridEl, getValue, apply){
+  let dragging = false, value = null, last = null;
+  gridEl.style.touchAction = 'none';
+  gridEl.addEventListener('pointerdown', (e) => {
+    const cell = e.target.closest('.cell');
+    if(!cell || !gridEl.contains(cell)) return;
+    if(e.pointerType === 'mouse' && e.button !== 0) return;
+    e.preventDefault();
+    dragging = true; last = cell;
+    value = getValue(cell);
+    apply(cell, value);
+  });
+  gridEl.addEventListener('pointermove', (e) => {
+    if(!dragging) return;
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    const cell = t && t.closest ? t.closest('.cell') : null;
+    if(!cell || !gridEl.contains(cell) || cell === last) return;
+    last = cell;
+    apply(cell, value);
+  });
+  const end = () => { dragging = false; last = null; };
+  window.addEventListener('pointerup', end);
+  window.addEventListener('pointercancel', end);
+}
+
 // -- 실제 문제들 --
 function buildPuzzle(puzzle, index){
   const solution = {};
@@ -348,17 +384,28 @@ function buildPuzzle(puzzle, index){
           const v = studentGrids[letter][r][c];
           const st = statusGrid ? statusGrid[r][c] : '';
           btn.className = 'cell' + (v ? ' on' : '') + (st ? (' status-'+st) : '');
-          btn.addEventListener('click', () => {
-            studentGrids[letter][r][c] = studentGrids[letter][r][c] ? 0 : 1;
-            renderPanelGrid();
-            feedback.textContent = '';
-            feedback.className = 'mini-feedback';
-            slotUpdaters.forEach(fn => fn());
+          btn.dataset.r = r; btn.dataset.c = c;
+          btn.addEventListener('click', (e) => {
+            if(e.detail === 0) paintPanelCell(btn, studentGrids[letter][r][c] ? 0 : 1);
           });
           gridEl.appendChild(btn);
         }
       }
     }
+    function paintPanelCell(btn, v){
+      const r = Number(btn.dataset.r), c = Number(btn.dataset.c);
+      if(studentGrids[letter][r][c] === v && !btn.classList.contains('status-correct') && !btn.classList.contains('status-wrong')) return;
+      studentGrids[letter][r][c] = v;
+      btn.className = 'cell' + (v ? ' on' : '');
+      feedback.textContent = '';
+      feedback.className = 'mini-feedback';
+      slotUpdaters.forEach(fn => fn());
+    }
+    enableDragPaint(
+      gridEl,
+      (cell) => (studentGrids[letter][Number(cell.dataset.r)][Number(cell.dataset.c)] ? 0 : 1),
+      (cell, v) => paintPanelCell(cell, v)
+    );
     renderPanelGrid();
     body.appendChild(gridEl);
     panelBox.appendChild(body);
@@ -453,6 +500,7 @@ function buildPuzzle(puzzle, index){
     select.addEventListener('change', () => {
       updateSlotGrid();
       validateUnique();
+      renderCombinedPicture();
     });
     slotUpdaters.push(updateSlotGrid);
     updateSlotGrid();
@@ -463,6 +511,43 @@ function buildPuzzle(puzzle, index){
     selects.push(select);
   }
   assemblyWrap.appendChild(assemblyGrid);
+
+  // combined whole-picture view
+  const combinedWrap = document.createElement('div');
+  combinedWrap.className = 'combined-wrap';
+  const combinedLabel = document.createElement('div');
+  combinedLabel.className = 'combined-label';
+  combinedLabel.textContent = '합쳐진 큰 그림';
+  const combinedGrid = document.createElement('div');
+  combinedGrid.className = 'combined-grid';
+  const combinedStatus = document.createElement('div');
+  combinedStatus.className = 'combined-status';
+  combinedStatus.textContent = '6개 자리를 모두 채우면 큰 그림이 이어져서 나타나요.';
+  combinedWrap.appendChild(combinedLabel);
+  combinedWrap.appendChild(combinedGrid);
+  combinedWrap.appendChild(combinedStatus);
+  assemblyWrap.appendChild(combinedWrap);
+
+  function renderCombinedPicture(){
+    combinedGrid.innerHTML = '';
+    const chosen = selects.map(s => s.value);
+    const getPanel = (l) => l ? studentGrids[l] : Array.from({length:8}, () => [0,0,0,0]);
+    const p = chosen.map(getPanel);
+    const top = p[0].map((row,i) => [...row, ...p[1][i], ...p[2][i]]);
+    const bot = p[3].map((row,i) => [...row, ...p[4][i], ...p[5][i]]);
+    const big = [...top, ...bot];
+    big.forEach(row => row.forEach(v => {
+      const d = document.createElement('div');
+      if(v) d.className = 'on';
+      combinedGrid.appendChild(d);
+    }));
+    const filledCount = chosen.filter(v => v).length;
+    combinedStatus.textContent = filledCount === 6
+      ? '배치를 바꿔가며 그림이 완성되어 보이는 자리를 찾아보세요.'
+      : `${6-filledCount}자리가 비어 있어요. 모두 채우면 큰 그림이 이어져요.`;
+  }
+  slotUpdaters.push(renderCombinedPicture);
+  renderCombinedPicture();
 
   const controls = document.createElement('div');
   controls.className = 'assembly-controls';
